@@ -30,15 +30,19 @@ public class Main extends JFrame implements KeyListener{
     private long lastFrame;
     private long startFrame;
     private int fps;
+    private boolean showfps = false;
     private boolean parity=false;
 
     //cloud variables
     private int cloudx = 0;
     //private int cloudy;
-
+    //friendly variables
+    private int friendlyx = 30;
+    private int friendlyy = 1080;
+    //enemy variables
 
     public Main(int width, int height, int fps){
-        super("JFrame Demo");
+        super("SideScroller v1");
         this.MAX_FPS = fps;
         this.WIDTH = width;
         this.HEIGHT = height;
@@ -93,8 +97,10 @@ public class Main extends JFrame implements KeyListener{
         g.fillRect(0, 800, 1920, 380);
         g.drawImage(makeImage("resources/clouds.png"), null, cloudx, 0);
         //draw fps
+        if(showfps){
         g.setColor(Color.red);
         g.drawString(Long.toString(fps), 10, 40);
+        }
         //release resources, show the buffer
         g.dispose();
         strategy.show();
@@ -134,7 +140,18 @@ public class Main extends JFrame implements KeyListener{
 
     public void keyPressed(KeyEvent keyEvent){
     switch(keyEvent.getKeyCode()){
-    
+    case KeyEvent.VK_F:
+    	showfps=!showfps;
+    break;
+    case KeyEvent.VK_SPACE:
+    	friendlyy+=20;
+    break;
+    case KeyEvent.VK_LEFT:
+    	friendlyx-=5;
+    break;
+    case KeyEvent.VK_RIGHT:
+    	friendlyx+=5;
+    break;
     }
     }
     public void keyTyped(KeyEvent keyEvent){
