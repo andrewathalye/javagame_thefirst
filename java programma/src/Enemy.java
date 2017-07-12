@@ -17,6 +17,7 @@ public class Enemy {
     int barrierRight;
     int health=5;
     int fullHealth=health;
+    int defaultFullHealth=health;
 	int variant=-1;
 	public Enemy(int width, int height){
 		screenWidth=width;

@@ -5,7 +5,6 @@ public class Friendly {
 	boolean side=true;
 	boolean direction=true;
 	boolean  attacking=false;
-	private String texture="friendly";
 	int variant=0;
 	int barrierLeft;
 	int barrierRight;
@@ -15,6 +14,7 @@ public class Friendly {
 	int width=350;
 	int height=500;
 	int health=10;
+	int maxHealth=10;
 	boolean jumping;
 	long jumpTime = 0;
 	public Friendly(int width, int height){
@@ -28,12 +28,6 @@ public class Friendly {
 		this.width=width;
 		this.height=height;
 		y= screenHeight - this.height;
-	}
-	public String getTexture(){
-		return "resources/"+texture+variant+".png_"+side;
-	}
-	public void setTexture(String texture){
-		this.texture = texture;
 	}
 	public void setVariant(int variant){
 		this.variant = variant;
