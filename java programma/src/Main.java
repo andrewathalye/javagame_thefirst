@@ -26,7 +26,7 @@ public class Main extends JFrame implements KeyListener{
 	public boolean isRunning = true;
 	private long rest = 0;
 	private boolean continueOn=false;
-	
+
 
 	//timing variables
 	public float dt;
@@ -35,28 +35,30 @@ public class Main extends JFrame implements KeyListener{
 	public int fps;
 	private boolean showfps = false;
 	private boolean parity=false;
+	public int fpserrors=0;
+	public long lastFrameError=0;
 
 	//collision vars
 	private boolean xcollide = false;
 	private boolean ycollide = false;
 
 	//enemy vars
-	boolean enemyDefeated = false;
-	Random attackRandom = new Random();
+	private boolean enemyDefeated = false;
+	private Random attackRandom = new Random();
 
 	//smooth key input
-	ArrayList<Integer> keys = new ArrayList<Integer>();
+	private ArrayList<Integer> keys = new ArrayList<Integer>();
 
 	//cloud variables
 	private int cloudx = 0;
 	//private int cloudy;
-	
+
 	//castle variables
 	private int castlex = 0;
 	private int castley;
 	private int stageNumber = 0;
 	private boolean enteringStage = true;
-	
+
 	//textures and fonts are now at TextureSource
 
 	//Initialise objects
@@ -65,20 +67,26 @@ public class Main extends JFrame implements KeyListener{
 	private Projectile friendlyProjectile = new Projectile();
 	private Projectile enemyProjectile = new Projectile();
 	private TextureSource textures = new TextureSource();
-	
+
 	private enum Gamestate {
-		INTRODUCTION,PLAYING,PAUSED,DEFEAT,VICTORY
+		INTRODUCTION,PLAYING,PAUSED,DEFEAT,VICTORY,COMPLETE
 	}
 	private Gamestate currentGameState = Gamestate.INTRODUCTION;
-	
+
 	public Main(int width, int height, int fps){
-		super("shoot'em v9");
+		super("shoot'em v10");
 		this.MAX_FPS = fps;
 		this.WIDTH = width;
 		this.HEIGHT = height;
 		enemy=new Enemy(WIDTH,HEIGHT);
 		friendly=new Friendly(WIDTH,HEIGHT);
 		castley=HEIGHT-7*HEIGHT/10;
+		//Debug for mario battle
+		/*
+		stageNumber=7;
+		enemy.setVariant(2);
+		currentGameState=Gamestate.PLAYING;
+		*/
 	}
 
 	private void init(){
@@ -187,6 +195,8 @@ public class Main extends JFrame implements KeyListener{
 		}
 		if(friendlyProjectile.launched || enemyProjectile.launched)
 			projectileCollisionDetect();
+		if(isFighting() && enteringStage)
+			enemy.variant++;
 	}
 	private void projectileCollisionDetect(){
 		xcollide=true;
@@ -218,7 +228,7 @@ public class Main extends JFrame implements KeyListener{
 				ycollide=true;
 			if(xcollide && ycollide){
 				friendly.y-=2*friendly.height;
-				friendly.health-=4;
+				friendly.health-=2;
 			}
 		}
 	}
@@ -238,7 +248,7 @@ public class Main extends JFrame implements KeyListener{
 			if(xcollide && ycollide){
 				//friendly.x-=enemy.width;
 				friendly.y-=2*enemy.height;
-				friendly.health-=4;
+				friendly.health-=2;
 				enemy.health-=2;
 			}
 		}
@@ -282,7 +292,6 @@ public class Main extends JFrame implements KeyListener{
 			}*/
 			if(enteringStage){
 				enemy.makeAccessible();
-				enemy.variant++;
 				enemy.setHealth(enemy.fullHealth+1);
 			}
 			g.drawImage(textures.enemy[enemy.variant][intFromBool(enemy.side)],null,enemy.x,enemy.y);
@@ -313,7 +322,7 @@ public class Main extends JFrame implements KeyListener{
 		if(showfps){
 			g.setColor(Color.red);
 			g.setFont(textures.smallFont);
-			g.drawString(Long.toString(fps), 10, 40);
+			g.drawString(Long.toString(fps)+" fps "+fpserrors+" errors.", 10, 40);
 		}
 		//release resources, show the buffer
 		g.dispose();
@@ -357,13 +366,13 @@ public class Main extends JFrame implements KeyListener{
 		g.setFont(textures.bigFont);
 		g.drawString("Stage: "+stageNumber, 200, 300);
 		g.drawString("Controls:", 200, 400);
-		g.drawString("C to resume", 200, 450);
-		g.drawString("F to show fps", 200, 500);
+		g.drawString("C to resume/continue", 200, 450);
+		g.drawString("F to show fps/errors", 200, 500);
 		g.drawString("Q to quit", 200, 550);
 		g.drawString("ESC to pause", 200, 600);
-		g.drawString("SPACE to move", 200, 650);
-		g.drawString("LEFT to move", 200, 700);
-		g.drawString("RIGHT to move", 200, 750);
+		g.drawString("SPACE to jump", 200, 650);
+		g.drawString("LEFT to move left", 200, 700);
+		g.drawString("RIGHT to move right", 200, 750);
 		g.drawString("S to attack", 200, 800);
 		g.dispose();
 		strategy.show();
@@ -389,8 +398,18 @@ public class Main extends JFrame implements KeyListener{
 			enemy.direction=false;
 			enemy.side=false;
 		}
+		if(currentGameState == Gamestate.COMPLETE){
+			g.drawImage(textures.complete, null, 0, 0);
+			isRunning=false;
+		}
 		g.dispose();
 		strategy.show();
+		if(currentGameState == Gamestate.COMPLETE){
+			while(true){
+				sleep(10);
+				handleSmoothKeys();
+			}
+		}
 		if(currentGameState == Gamestate.VICTORY){
 			currentGameState = Gamestate.PLAYING;
 			sleep(5000);
@@ -402,6 +421,7 @@ public class Main extends JFrame implements KeyListener{
 			friendly.x=WIDTH-friendly.width-30;
 			friendly.y=HEIGHT-friendly.height;
 			enemyDefeated=true;
+			enemy.attacking=false;
 		}
 		if(currentGameState == Gamestate.DEFEAT){
 			continueOn=false;
@@ -418,6 +438,7 @@ public class Main extends JFrame implements KeyListener{
 			friendlyProjectile.launched=false;
 			friendly.side=true;
 			friendly.direction=true;
+			friendly.attacking=false;
 
 			enemy.side=false;
 			enemy.direction=false;
@@ -427,11 +448,21 @@ public class Main extends JFrame implements KeyListener{
 			enemy.fullHealth=enemy.defaultFullHealth;
 			enemyProjectile.calibrateTo(0, 0);
 			enemyProjectile.launched=false;
+			enemy.attacking=false;
 
 			enteringStage=true;
 			stageNumber=0;
 			currentGameState = Gamestate.PLAYING;
+			isRunning=true;
 		}
+	}
+	private void drawFramesError(){
+		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
+		g.drawImage(textures.frameserror, null, 0, 0);
+		g.dispose();
+		strategy.show();
+		sleep(20000);
+		System.exit(1);
 	}
 	private void sleep(int time){
 		try{
@@ -541,6 +572,18 @@ public class Main extends JFrame implements KeyListener{
 			if(currentGameState == Gamestate.PLAYING){
 				//attackRandom = new Random(System.currentTimeMillis());
 				update();
+				if(System.currentTimeMillis()-lastFrameError > 3000)
+					fpserrors=0;
+				if(fps<25){
+					lastFrameError=System.currentTimeMillis();
+					fpserrors++;
+					if(fpserrors>20)
+						drawFramesError();
+				}
+				if(enemy.variant > enemy.variants){
+					currentGameState = Gamestate.COMPLETE;
+					drawEndMenu();
+				}
 				draw();
 			}
 			parity=!parity;

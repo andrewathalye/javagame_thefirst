@@ -14,11 +14,12 @@ public class Enemy {
 	private int screenHeight;
 	private int jumpDelay=2500;
 	int barrierLeft;
-    int barrierRight;
-    int health=5;
-    int fullHealth=health;
-    int defaultFullHealth=health;
+	int barrierRight;
+	int health=5;
+	int fullHealth=health;
+	int defaultFullHealth=health;
 	int variant=-1;
+	int variants=3;
 	public Enemy(int width, int height){
 		screenWidth=width;
 		screenHeight=height;

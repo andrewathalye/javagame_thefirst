@@ -5,7 +5,7 @@ import java.io.File;
 import javax.imageio.ImageIO;
 public class TextureSource {
 	BufferedImage[][] friendly = new BufferedImage[2][2];
-	BufferedImage[][] enemy = new BufferedImage[3][2];
+	BufferedImage[][] enemy = new BufferedImage[4][2];
 	BufferedImage[] projectile = new BufferedImage[2];
 	BufferedImage defeat;
 	BufferedImage victory;
@@ -14,6 +14,8 @@ public class TextureSource {
 	BufferedImage pausemenu;
 	BufferedImage introduction;
 	BufferedImage loading;
+	BufferedImage frameserror;
+	BufferedImage complete;
 	Font smallFont = new Font ("Courier New", 1, 18);
 	Font medFont = new Font ("Courier New", 1, 30);
 	Font bigFont = new Font ("Courier New", 1, 60);
@@ -25,7 +27,7 @@ public class TextureSource {
 			for(int i2=0;i2<2;i2++)
 				friendly[i][i2]=makeImage(prefix+"friendly"+i+".png_"+boolFromInt(i2));
 		}
-		for(int i=0;i<3;i++){
+		for(int i=0;i<4;i++){
 			for(int i2=0;i2<2;i2++)
 				enemy[i][i2]=makeImage(prefix+"enemy"+i+".png_"+boolFromInt(i2));
 		}
@@ -39,6 +41,8 @@ public class TextureSource {
 		pausemenu=makeImage(prefix+"pausemenu.png");
 		introduction=makeImage(prefix+"introduction.png");
 		loading=makeImage(prefix+"loading.png");
+		frameserror=makeImage(prefix+"frameserror.png");
+		complete=makeImage(prefix+"complete.png");
 	}
 	private BufferedImage makeImage(String path){
 		try{
