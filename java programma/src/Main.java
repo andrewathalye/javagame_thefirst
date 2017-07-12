@@ -339,7 +339,7 @@ public class Main extends JFrame implements KeyListener{
 		if(currentGameState == Gamestate.VICTORY){
 			g.drawImage(textures.victory,null,0,0);
 			enemy.makeInaccessible();
-			enemy.health=10;
+			enemy.health=5;
 		}
 		g.dispose();
 		strategy.show();
