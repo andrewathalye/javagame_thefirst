@@ -3,6 +3,8 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferStrategy;
+import java.util.ArrayList;
+import java.util.Random;
 
 public class Main extends JFrame implements KeyListener{
 
@@ -38,6 +40,13 @@ public class Main extends JFrame implements KeyListener{
 	private boolean xcollide = false;
 	private boolean ycollide = false;
 
+	//enemy vars
+	boolean enemyDefeated = false;
+	Random attackRandom = new Random();
+
+	//smooth key input
+	ArrayList<Integer> keys = new ArrayList<Integer>();
+
 	//cloud variables
 	private int cloudx = 0;
 	//private int cloudy;
@@ -46,10 +55,7 @@ public class Main extends JFrame implements KeyListener{
 	private int castley;
 	private int stageNumber = 0;
 	private boolean enteringStage = true;
-	//textures and fonts
-	//Moved to Texturesource
-	//private String cloudTexture="clouds";
-	//private String castleTexture="castlebackground";
+	//textures and fonts are now at TextureSource
 
 	//Initialise objects
 	private Friendly friendly;
@@ -64,7 +70,7 @@ public class Main extends JFrame implements KeyListener{
 	}
 	private Gamestate currentGameState = Gamestate.INTRODUCTION;
 	public Main(int width, int height, int fps){
-		super("shoot'em v7");
+		super("shoot'em v8");
 		this.MAX_FPS = fps;
 		this.WIDTH = width;
 		this.HEIGHT = height;
@@ -129,6 +135,29 @@ public class Main extends JFrame implements KeyListener{
 		}
 		if(enemy.x < friendly.barrierLeft){
 			enemy.x=friendly.barrierLeft;
+		}
+		if(isFighting() && enemy.accessible){
+			if(attackRandom.nextInt(400) == 5){
+				if(((System.currentTimeMillis()-enemy.jumpTime) > enemy.getJumpDelay()) && (!enemy.jumping) || (enemy.jumpTime == 0)){
+					enemy.jumping=true;
+					enemy.jumpTime=System.currentTimeMillis();
+				}
+			}
+			if(attackRandom.nextInt(10) == 4){
+				enemy.x-=20;
+			}
+			if(attackRandom.nextInt(200) == 3){
+				enemy.x+=20;
+			}
+			if(Math.abs(friendly.y-enemy.y) < 201){
+				if(attackRandom.nextInt(50) == 2){
+					if(!enemy.attacking){
+						enemy.attacking=true;
+						enemyProjectile.calibrateTo(enemy.x+enemy.width/2,enemy.y+enemy.height/2);
+						enemyProjectile.launch(enemy.side);
+					}
+				}
+			}
 		}
 		collisionDetect();
 		if(friendly.health < 1)
@@ -243,6 +272,7 @@ public class Main extends JFrame implements KeyListener{
 			if(enteringStage){
 				enemy.makeAccessible();
 				enemy.variant++;
+				enemy.setHealth(enemy.fullHealth+1);
 			}
 			g.drawImage(textures.enemy[enemy.variant][intFromBool(enemy.side)],null,enemy.x,enemy.y);
 		} else{
@@ -259,12 +289,14 @@ public class Main extends JFrame implements KeyListener{
 			g.setColor(Color.white);
 			g.setFont(textures.bigFont);
 			g.drawString("STAGE "+stageNumber, 960, 300);
+			enemyDefeated=false;
 		}
 		//draw player health
 		g.setColor(Color.black);
 		g.setFont(textures.medFont);
 		g.drawString("Health: "+friendly.health, 100, 70);
-		if(isFighting())
+		//draw enemy health
+		if(isFighting() && !enemyDefeated)
 			g.drawString("Enemy: "+enemy.health, 1600, 70);
 		//draw fps
 		if(showfps){
@@ -301,7 +333,7 @@ public class Main extends JFrame implements KeyListener{
 		strategy.show();
 		continueOn=false;
 		while(!continueOn){
-			sleep(100);
+			handleSmoothKeys();
 			currentGameState=Gamestate.PAUSED;
 		}
 	}
@@ -325,8 +357,10 @@ public class Main extends JFrame implements KeyListener{
 		g.dispose();
 		strategy.show();
 		continueOn=false;
+		sleep(200);
 		while(!continueOn){
-			sleep(100);
+			sleep(10);
+			handleSmoothKeys();
 		}
 		currentGameState=Gamestate.PLAYING;
 	}
@@ -335,21 +369,34 @@ public class Main extends JFrame implements KeyListener{
 		if(currentGameState == Gamestate.DEFEAT){
 			g.drawImage(textures.defeat,null,0,0);
 			isRunning=false;
+			sleep(100);
 		}
 		if(currentGameState == Gamestate.VICTORY){
 			g.drawImage(textures.victory,null,0,0);
 			enemy.makeInaccessible();
-			enemy.health=5;
+			enemy.health=1;
+			enemy.direction=false;
+			enemy.side=false;
 		}
 		g.dispose();
 		strategy.show();
 		if(currentGameState == Gamestate.VICTORY){
 			currentGameState = Gamestate.PLAYING;
-			sleep(10000);
+			sleep(5000);
 			friendlyProjectile.calibrateTo(0, 0);
 			friendlyProjectile.launched=false;
+			enemyProjectile.calibrateTo(0, 0);
+			enemyProjectile.launched=false;
 			friendly.attacking=false;
 			friendly.x=WIDTH-friendly.width-30;
+			friendly.y=HEIGHT-friendly.height;
+			enemyDefeated=true;
+		}
+		if(currentGameState == Gamestate.DEFEAT){
+			while(true){
+				sleep(100);
+				handleSmoothKeys();
+			}
 		}
 	}
 	private void sleep(int time){
@@ -361,6 +408,87 @@ public class Main extends JFrame implements KeyListener{
 	}
 	private int intFromBool(boolean bool){
 		return (bool) ? 1 : 0;
+	}
+	private void handleSmoothKeys(){
+		//System.out.println(keys.size());
+		//System.out.println("Ran handler");
+		if(keys.size()>0){
+			for(int i=0;i<keys.size();i++){
+				//System.out.println("Found key!");
+				if(currentGameState == Gamestate.PLAYING){
+					switch(keys.get(i)){
+					case KeyEvent.VK_S:
+						if(!friendly.attacking){
+							friendly.attacking=true;
+							friendlyProjectile.calibrateTo(friendly.x+friendly.width/2,friendly.y+friendly.height/2);
+							friendlyProjectile.launch(friendly.side);
+						}
+						break;
+					case KeyEvent.VK_ESCAPE:
+						currentGameState = Gamestate.PAUSED;
+						break;
+					case KeyEvent.VK_SPACE:
+						if(((System.currentTimeMillis()-friendly.jumpTime) > friendly.getJumpDelay()) && (!friendly.jumping) || (friendly.jumpTime == 0)){
+							friendly.jumping=true;
+							friendly.jumpTime=System.currentTimeMillis();
+						}
+						break;
+					case KeyEvent.VK_LEFT:
+						friendly.x-=friendly.width/20;
+						if(friendly.direction){
+							friendly.side=!friendly.side;
+							friendly.direction=!friendly.direction;
+						}
+						break;
+					case KeyEvent.VK_RIGHT:
+						friendly.x+=friendly.width/20;
+						if(!friendly.direction){
+							friendly.side=!friendly.side;
+							friendly.direction=!friendly.direction;
+						}
+						break;
+						//Debug code for moving enemy
+					case KeyEvent.VK_J:
+						enemy.x-=enemy.width/20;
+						if(enemy.direction){
+							enemy.side=!enemy.side;
+							enemy.direction=!enemy.direction;
+						}
+						break;
+					case KeyEvent.VK_L:
+						enemy.x+=enemy.width/20;
+						if(!enemy.direction){
+							enemy.side=!enemy.side;
+							enemy.direction=!enemy.direction;
+						}
+						break;
+						/*
+				case KeyEvent.VK_K:
+					enemy.y+=20;
+					break;
+						 */
+					case KeyEvent.VK_I:
+						//enemy.y-=enemy.height/10;
+						if(((System.currentTimeMillis()-enemy.jumpTime) > enemy.getJumpDelay()) && (!enemy.jumping) || (enemy.jumpTime == 0)){
+							enemy.jumping=true;
+							enemy.jumpTime=System.currentTimeMillis();
+						}
+						break;
+					case KeyEvent.VK_SEMICOLON:
+						if(!enemy.attacking){
+							enemy.attacking=true;
+							enemyProjectile.calibrateTo(enemy.x+enemy.width/2,enemy.y+enemy.height/2);
+							enemyProjectile.launch(enemy.side);
+						}
+						break;
+					}
+				}
+				if(keys.get(i) == KeyEvent.VK_C)
+					continueOn=true;
+				if(keys.get(i) == KeyEvent.VK_Q)
+					System.exit(0);
+			}
+		}
 	}
 	public void run(){
 		init();
@@ -376,8 +504,11 @@ public class Main extends JFrame implements KeyListener{
 			dt = (float)(startFrame - lastFrame)/1000;
 			//log the current time
 			lastFrame = startFrame;
+			//handle keys 
+			handleSmoothKeys();
 			//call update and draw methods
 			if(currentGameState == Gamestate.PLAYING){
+				//attackRandom = new Random(System.currentTimeMillis());
 				update();
 				draw();
 			}
@@ -398,81 +529,12 @@ public class Main extends JFrame implements KeyListener{
 	}
 	@Override
 	public void keyPressed(KeyEvent keyEvent){
-		if(currentGameState == Gamestate.PLAYING){
-			switch(keyEvent.getKeyCode()){
-			case KeyEvent.VK_F:
-				showfps=!showfps;
-				break;
-			case KeyEvent.VK_S:
-				if(!friendly.attacking){
-					friendly.attacking=true;
-					friendlyProjectile.calibrateTo(friendly.x+friendly.width/2,friendly.y+friendly.height/2);
-					friendlyProjectile.launch(friendly.side);
-				}
-				break;
-			case KeyEvent.VK_ESCAPE:
-				currentGameState = Gamestate.PAUSED;
-				break;
-			case KeyEvent.VK_SPACE:
-				if(((System.currentTimeMillis()-friendly.jumpTime) > friendly.getJumpDelay()) && (!friendly.jumping) || (friendly.jumpTime == 0)){
-					friendly.jumping=true;
-					friendly.jumpTime=System.currentTimeMillis();
-				}
-				break;
-			case KeyEvent.VK_LEFT:
-				friendly.x-=friendly.width/10;
-				if(friendly.direction){
-					friendly.side=!friendly.side;
-					friendly.direction=!friendly.direction;
-				}
-				break;
-			case KeyEvent.VK_RIGHT:
-				friendly.x+=friendly.width/10;
-				if(!friendly.direction){
-					friendly.side=!friendly.side;
-					friendly.direction=!friendly.direction;
-				}
-				break;
-				//Debug code for moving enemy
-			case KeyEvent.VK_J:
-				enemy.x-=enemy.width/10;
-				if(enemy.direction){
-					enemy.side=!enemy.side;
-					enemy.direction=!enemy.direction;
-				}
-				break;
-			case KeyEvent.VK_L:
-				enemy.x+=enemy.width/10;
-				if(!enemy.direction){
-					enemy.side=!enemy.side;
-					enemy.direction=!enemy.direction;
-				}
-				break;
-				/*
-			case KeyEvent.VK_K:
-				enemy.y+=20;
-				break;
-				 */
-			case KeyEvent.VK_I:
-				//enemy.y-=enemy.height/10;
-				if(((System.currentTimeMillis()-enemy.jumpTime) > enemy.getJumpDelay()) && (!enemy.jumping) || (enemy.jumpTime == 0)){
-					enemy.jumping=true;
-					enemy.jumpTime=System.currentTimeMillis();
-				}
-				break;
-			case KeyEvent.VK_SEMICOLON:
-				if(!enemy.attacking){
-					enemy.attacking=true;
-					enemyProjectile.calibrateTo(enemy.x+enemy.width/2,enemy.y+enemy.height/2);
-					enemyProjectile.launch(enemy.side);
-				}
-				break;
-			}
+		if(keyEvent.getKeyCode() == KeyEvent.VK_F)
+			showfps=!showfps;
+		if(!keys.contains(keyEvent.getKeyCode())){
+			keys.add(keyEvent.getKeyCode());
+			//System.out.println("Added key");
 		}
-		if(keyEvent.getKeyCode() == KeyEvent.VK_C)
-			continueOn=true;
-		if(keyEvent.getKeyCode() == KeyEvent.VK_Q)
-			System.exit(0);
 	}
 	@Override
 	public void keyTyped(KeyEvent keyEvent){
@@ -481,7 +543,10 @@ public class Main extends JFrame implements KeyListener{
 	@Override
 	public void keyReleased(KeyEvent keyEvent)
 	{
-
+		for(int i=keys.size()-1; i>-1; i--){
+			if(keys.get(i) == keyEvent.getKeyCode())
+				keys.remove(i);
+		}
 	}
 
 	public static void main(String[] args){

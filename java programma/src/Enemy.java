@@ -16,8 +16,8 @@ public class Enemy {
 	int barrierLeft;
     int barrierRight;
     int health=5;
+    int fullHealth=health;
 	int variant=-1;
-	private String texture="enemy";
 	public Enemy(int width, int height){
 		screenWidth=width;
 		screenHeight=height;
@@ -32,6 +32,7 @@ public class Enemy {
 	}
 	public void makeAccessible(){
 		x=screenWidth - this.width - 30;
+		y= screenHeight - this.height;
 		accessible=true;
 	}
 	public void update(int width, int height){
@@ -40,19 +41,17 @@ public class Enemy {
 		x=screenWidth - this.width - 30;
 		y= screenHeight - this.height;
 	}
-	public String getTexture(){
-		return "resources/"+texture+variant+".png_"+side;
-	}
-	public void setTexture(String texture){
-		this.texture = texture;
-	}
-	public void setVariant(int variant){
-		this.variant = variant;
-	}
 	public boolean isAttacking(){
 		return attacking;
 	}
 	public int getJumpDelay(){
 		return jumpDelay;
+	}
+	public void setHealth(int health){
+		this.health=health;
+		this.fullHealth=health;
+	}
+	public void setVariant(int variant){
+		this.variant = variant;
 	}
 }

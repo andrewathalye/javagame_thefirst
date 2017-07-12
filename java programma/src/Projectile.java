@@ -18,9 +18,9 @@ public class Projectile {
 	}
 	public void advance(){
 		if(direction)
-			x+=20;
+			x+=40;
 		if(!direction)
-			x-=20;
+			x-=40;
 	}
 	public String getTexture(){
 		return "resources/"+texture+".png_"+direction;
