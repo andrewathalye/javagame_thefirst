@@ -3,7 +3,7 @@ public class Projectile {
 	boolean launched = false;
 	int x;
 	int y;
-	private boolean direction;
+	boolean direction;
 	private String texture="projectile";
 	public Projectile(){
 

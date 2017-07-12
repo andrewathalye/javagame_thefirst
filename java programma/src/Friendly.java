@@ -6,7 +6,7 @@ public class Friendly {
 	boolean direction=true;
 	boolean  attacking=false;
 	private String texture="friendly";
-	private int variant=0;
+	int variant=0;
 	int barrierLeft;
 	int barrierRight;
 	private int screenWidth;

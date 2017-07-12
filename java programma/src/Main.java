@@ -1,37 +1,36 @@
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferStrategy;
-import java.awt.image.BufferedImage;
-import java.io.File;
 
 public class Main extends JFrame implements KeyListener{
 
 	/**
-	 * 
+	 * (C) 2017 Andrew Athalye. Read attached README.md for specific details.
+	 * This program is not to be modified for a commercial purpose, or sold.
+	 * NO WARRANTY OR GUARANTEE WHATSOEVER IS PROVIDED ALONGSIDE THIS SOFTWARE
 	 */
-	private static final long serialVersionUID = -6544615776460473513L;
+	public static final long serialVersionUID = -6544615776460473513L;
 	//window vars
-	private final int MAX_FPS;
-	private final int WIDTH;
-	private final int HEIGHT;
+	public final int MAX_FPS;
+	public final int WIDTH;
+	public final int HEIGHT;
 
 	//double buffer
 	private BufferStrategy strategy;
 
 	//loop variables
-	private boolean isRunning = true;
+	public boolean isRunning = true;
 	private long rest = 0;
 	private boolean continueOn=false;
 	//private boolean isPaused=false;
 
 	//timing variables
-	private float dt;
-	private long lastFrame;
-	private long startFrame;
-	private int fps;
+	public float dt;
+	public long lastFrame;
+	public long startFrame;
+	public int fps;
 	private boolean showfps = false;
 	private boolean parity=false;
 
@@ -44,36 +43,37 @@ public class Main extends JFrame implements KeyListener{
 	//private int cloudy;
 	//castle variables
 	private int castlex = 0;
-	private int castley=300;
+	private int castley;
 	private int stageNumber = 0;
 	private boolean enteringStage = true;
 	//textures and fonts
-	private String cloudTexture="clouds";
-	private String castleTexture="castlebackground";
-	private Font smallFont = new Font ("Courier New", 1, 18);
-	private Font medFont = new Font ("Courier New", 1, 30);
-	private Font bigFont = new Font ("Courier New", 1, 60);
-	//private Font hugeFont = new Font ("Courier New", 1, 90);
+	//Moved to Texturesource
+	//private String cloudTexture="clouds";
+	//private String castleTexture="castlebackground";
 
+	//Initialise objects
 	private Friendly friendly;
 	private Enemy enemy;
-	private Projectile friendlyProjectile;
+	private Projectile friendlyProjectile = new Projectile();
+	private Projectile enemyProjectile = new Projectile();
+	private TextureSource textures = new TextureSource();
 	//TODO: Add buffered image arrays here for simplicity
+	//Will be implemented in TextureSource
 	private enum Gamestate {
 		INTRODUCTION,PLAYING,PAUSED,DEFEAT,VICTORY
 	}
 	private Gamestate currentGameState = Gamestate.INTRODUCTION;
 	public Main(int width, int height, int fps){
-		super("shoot'em v6");
+		super("shoot'em v7");
 		this.MAX_FPS = fps;
 		this.WIDTH = width;
 		this.HEIGHT = height;
 		enemy=new Enemy(WIDTH,HEIGHT);
 		friendly=new Friendly(WIDTH,HEIGHT);
-		friendlyProjectile=new Projectile();
+		castley=HEIGHT-7*HEIGHT/10;
 	}
 
-	void init(){
+	private void init(){
 		//initialize JFrame
 		setPreferredSize(new Dimension(WIDTH, HEIGHT));
 		setLayout(null);
@@ -109,13 +109,26 @@ public class Main extends JFrame implements KeyListener{
 		}
 		if((friendly.y < (HEIGHT - friendly.height - 1)) && !friendly.jumping)
 			friendly.y+=friendly.height/62;
+		if(enemy.jumping){
+			enemy.y-=enemy.height/20;
+			if( (System.currentTimeMillis() - enemy.jumpTime ) > 499)
+				enemy.jumping=false;
+		}
+		if((enemy.y < (HEIGHT - enemy.height - 1)) && !enemy.jumping)
+			enemy.y+=enemy.height/62;
 		if(friendly.x > friendly.barrierRight){
 			friendly.x=30;
 			stageNumber++;
 			enteringStage=true;
 		}
+		if(enemy.x > enemy.barrierRight-30-enemy.width && enemy.accessible){
+			enemy.x=enemy.barrierRight-30-enemy.width;
+		}
 		if(friendly.x < friendly.barrierLeft){
 			friendly.x=friendly.barrierLeft;
+		}
+		if(enemy.x < friendly.barrierLeft){
+			enemy.x=friendly.barrierLeft;
 		}
 		collisionDetect();
 		if(friendly.health < 1)
@@ -124,6 +137,51 @@ public class Main extends JFrame implements KeyListener{
 			currentGameState=Gamestate.VICTORY;
 		if(friendlyProjectile.launched)
 			friendlyProjectile.advance();
+		if(enemyProjectile.launched)
+			enemyProjectile.advance();
+		//Update projectile states
+		if(friendlyProjectile.x > WIDTH || friendlyProjectile.x < 0){
+			friendly.attacking=false;
+			friendlyProjectile.launched=false;
+			friendlyProjectile.calibrateTo(0, 0);
+		}
+		if(enemyProjectile.x > WIDTH || enemyProjectile.x < 0){
+			enemy.attacking=false;
+			enemyProjectile.launched=false;
+			enemyProjectile.calibrateTo(0, 0);
+		}
+		if(friendlyProjectile.launched || enemyProjectile.launched)
+			projectileCollisionDetect();
+	}
+	private void projectileCollisionDetect(){
+		xcollide=true;
+		ycollide=true;
+		while(xcollide && ycollide){
+			xcollide=false;
+			ycollide=false;
+			if(Math.abs(friendlyProjectile.x - enemy.x) < enemy.width)
+				xcollide=true;
+			if(Math.abs(friendlyProjectile.y - enemy.y) < enemy.height)
+				ycollide=true;
+			if(xcollide && ycollide){
+				enemy.y-=enemy.height;
+				enemy.health-=2;
+			}
+		}
+		xcollide=true;
+		ycollide=true;
+		while(xcollide && ycollide){
+			xcollide=false;
+			ycollide=false;
+			if(Math.abs(enemyProjectile.x - friendly.x) < friendly.width)
+				xcollide=true;
+			if(Math.abs(enemyProjectile.y - friendly.y) < friendly.height)
+				ycollide=true;
+			if(xcollide && ycollide){
+				friendly.y-=2*friendly.height;
+				friendly.health-=2;
+			}
+		}
 	}
 	private void collisionDetect(){
 		xcollide=true;
@@ -131,26 +189,6 @@ public class Main extends JFrame implements KeyListener{
 		while(xcollide && ycollide){
 			xcollide=false;
 			ycollide=false;
-			/*
-			if (friendly.x > enemy.x){
-				if ((friendly.x - enemy.x) < friendly.width)
-					xcollide=true;
-			}
-			if (friendly.x < enemy.x){
-				if ((enemy.x - friendly.x) < enemy.width)
-					xcollide=true;
-			}
-			if (friendly.y > enemy.y){
-				if ((friendly.y - enemy.y) < friendly.height)
-					ycollide=true;
-			}
-			if (enemy.y > friendly.y){
-				if ((enemy.y - friendly.y) < enemy.height)
-					ycollide=true;
-			}
-			System.out.println(friendly.x+" "+friendly.y+","+enemy.x+" "+enemy.y);
-			}
-			 */
 			if(Math.abs(friendly.x - enemy.x) < enemy.width)
 				xcollide=true;
 			if(Math.abs(friendly.y - enemy.y) < enemy.height)
@@ -166,6 +204,15 @@ public class Main extends JFrame implements KeyListener{
 		}
 	}
 	private void draw(){
+		if(isFighting() && enteringStage){
+			castley=HEIGHT-6*HEIGHT/10;
+			friendly.setVariant(1);
+			friendly.update(88, 125);
+		}else if(enteringStage){
+			castley=HEIGHT-7*HEIGHT/10;
+			friendly.setVariant(0);
+			friendly.update(350, 500);
+		}
 		//get canvas
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 
@@ -181,41 +228,48 @@ public class Main extends JFrame implements KeyListener{
 		g.fillRect(0, 300,1920,600);
 		g.setColor(Color.green);
 		g.fillRect(0, 900, 1920, 380);
-		if((stageNumber == 1) && enteringStage){
-			castley=HEIGHT-600;
-			friendly.setVariant(1);
-			friendly.update(88, 125);
-		}
-		g.drawImage(makeImage("resources/"+castleTexture+".png"), null, castlex, castley); 
-		g.drawImage(makeImage("resources/"+cloudTexture+".png"), null, cloudx, 0);
+		g.drawImage(textures.castle, null, castlex, castley); 
+		g.drawImage(textures.clouds, null, cloudx, 0);
+
+
 		//draw friendly
-		g.drawImage(makeImage(friendly.getTexture()),null,friendly.x,friendly.y);
+		g.drawImage(textures.friendly[friendly.variant][intFromBool(friendly.side)],null,friendly.x,friendly.y);
+
 		//draw enemy
-		if(stageNumber > 0){
-			if(!enemy.accessible){
+		if(isFighting()){
+			/*if(!enemy.accessible){
 				enemy.makeAccessible();
+			}*/
+			if(enteringStage){
+				enemy.makeAccessible();
+				enemy.variant++;
 			}
-			enemy.setVariant(stageNumber);
-			g.drawImage(makeImage(enemy.getTexture()),null,enemy.x,enemy.y);
+			g.drawImage(textures.enemy[enemy.variant][intFromBool(enemy.side)],null,enemy.x,enemy.y);
 		} else{
 			enemy.makeInaccessible();
 		}
 		//draw projectiles
-		g.drawImage(makeImage(friendlyProjectile.getTexture()), null, friendlyProjectile.x, friendlyProjectile.y);
+		if(friendlyProjectile.launched)
+			g.drawImage(textures.projectile[intFromBool(friendlyProjectile.direction)], null, friendlyProjectile.x, friendlyProjectile.y);
+		if(enemyProjectile.launched)
+			g.drawImage(textures.projectile[intFromBool(enemyProjectile.direction)], null, enemyProjectile.x, enemyProjectile.y);
+
 		//draw stage welcome
 		if(enteringStage){
 			g.setColor(Color.white);
-			g.setFont(bigFont);
+			g.setFont(textures.bigFont);
 			g.drawString("STAGE "+stageNumber, 960, 300);
 		}
 		//draw player health
-				g.setColor(Color.black);
-				g.setFont(medFont);
-				g.drawString("Health: "+friendly.health, 100, 70);
+		g.setColor(Color.black);
+		g.setFont(textures.medFont);
+		g.drawString("Health: "+friendly.health, 100, 70);
+		if(isFighting())
+			g.drawString("Enemy: "+enemy.health, 1600, 70);
 		//draw fps
 		if(showfps){
 			g.setColor(Color.red);
-			g.setFont(smallFont);
+			g.setFont(textures.smallFont);
 			g.drawString(Long.toString(fps), 10, 40);
 		}
 		//release resources, show the buffer
@@ -228,16 +282,16 @@ public class Main extends JFrame implements KeyListener{
 	}
 	private void drawLoading(){
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
-		g.drawImage(makeImage("resources/loading.png"), null, 0, 10);
+		g.drawImage(textures.loading, null, 0, 10);
 		g.dispose();
 		strategy.show();
 		sleep(2000);
 	}
 	private void drawIntro(){
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
-		g.drawImage(makeImage("resources/introduction.png"), null, 0, 0);
+		g.drawImage(textures.introduction, null, 0, 0);
 		g.setColor(Color.black);
-		g.setFont(bigFont);
+		g.setFont(textures.bigFont);
 		g.drawString("Welcome to the world of shoot'em!",500,300);
 		g.drawString("You play as Antonov, a magician. The ",500,450);
 		g.drawString("goal of the game is simple: defeat the",500,600);
@@ -251,10 +305,13 @@ public class Main extends JFrame implements KeyListener{
 			currentGameState=Gamestate.PAUSED;
 		}
 	}
+	private boolean isFighting(){
+		return !((stageNumber/2)*2 == stageNumber);
+	}
 	private void drawPauseMenu(){
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
-		g.drawImage(makeImage("resources/pausemenu.png"), null, 0, 0);
-		g.setFont(bigFont);
+		g.drawImage(textures.pausemenu, null, 0, 0);
+		g.setFont(textures.bigFont);
 		g.drawString("Stage: "+stageNumber, 200, 300);
 		g.drawString("Controls:", 200, 400);
 		g.drawString("C to resume", 200, 450);
@@ -275,13 +332,25 @@ public class Main extends JFrame implements KeyListener{
 	}
 	private void drawEndMenu(){
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
-		if(currentGameState == Gamestate.DEFEAT)
-			g.drawImage(makeImage("resources/defeat.png"),null,0,0);
-		if(currentGameState == Gamestate.VICTORY)
-			g.drawImage(makeImage("resources/victory.png"),null,0,0);
+		if(currentGameState == Gamestate.DEFEAT){
+			g.drawImage(textures.defeat,null,0,0);
+			isRunning=false;
+		}
+		if(currentGameState == Gamestate.VICTORY){
+			g.drawImage(textures.victory,null,0,0);
+			enemy.makeInaccessible();
+			enemy.health=10;
+		}
 		g.dispose();
 		strategy.show();
-		isRunning=false;
+		if(currentGameState == Gamestate.VICTORY){
+			currentGameState = Gamestate.PLAYING;
+			sleep(10000);
+			friendlyProjectile.calibrateTo(0, 0);
+			friendlyProjectile.launched=false;
+			friendly.attacking=false;
+			friendly.x=WIDTH-friendly.width-30;
+		}
 	}
 	private void sleep(int time){
 		try{
@@ -290,16 +359,9 @@ public class Main extends JFrame implements KeyListener{
 
 		}
 	}
-	private BufferedImage makeImage(String path){
-		try{
-			return ImageIO.read(new File(getClass().getResource(path).toURI()));
-		} catch(Exception e){
-			System.err.println(path);
-			e.printStackTrace();
-			return null;
-		}
+	private int intFromBool(boolean bool){
+		return (bool) ? 1 : 0;
 	}
-
 	public void run(){
 		init();
 		drawLoading();
@@ -315,11 +377,13 @@ public class Main extends JFrame implements KeyListener{
 			//log the current time
 			lastFrame = startFrame;
 			//call update and draw methods
-			update();
-			draw();
+			if(currentGameState == Gamestate.PLAYING){
+				update();
+				draw();
+			}
 			parity=!parity;
 			cleanup();
-			if(currentGameState == Gamestate.DEFEAT)
+			if(currentGameState == Gamestate.DEFEAT || currentGameState == Gamestate.VICTORY)
 				drawEndMenu();
 		}
 
@@ -334,73 +398,81 @@ public class Main extends JFrame implements KeyListener{
 	}
 	@Override
 	public void keyPressed(KeyEvent keyEvent){
-		switch(keyEvent.getKeyCode()){
-		case KeyEvent.VK_F:
-			showfps=!showfps;
-			break;
-		case KeyEvent.VK_C:
-			continueOn=true;
-			break;
-		case KeyEvent.VK_S:
-			if(!friendly.attacking)
-				friendly.attacking=true;
-				friendlyProjectile.calibrateTo(friendly.x+friendly.width/2,friendly.y+friendly.height/2);
-				friendlyProjectile.launch(friendly.side);
-			break;
-		case KeyEvent.VK_ESCAPE:
-			currentGameState = Gamestate.PAUSED;
-			break;
-		case KeyEvent.VK_SPACE:
-			if(((System.currentTimeMillis()-friendly.jumpTime) > friendly.getJumpDelay()) && (!friendly.jumping) || (friendly.jumpTime == 0)){
-				friendly.jumping=true;
-				friendly.jumpTime=System.currentTimeMillis();
+		if(currentGameState == Gamestate.PLAYING){
+			switch(keyEvent.getKeyCode()){
+			case KeyEvent.VK_F:
+				showfps=!showfps;
+				break;
+			case KeyEvent.VK_S:
+				if(!friendly.attacking){
+					friendly.attacking=true;
+					friendlyProjectile.calibrateTo(friendly.x+friendly.width/2,friendly.y+friendly.height/2);
+					friendlyProjectile.launch(friendly.side);
+				}
+				break;
+			case KeyEvent.VK_ESCAPE:
+				currentGameState = Gamestate.PAUSED;
+				break;
+			case KeyEvent.VK_SPACE:
+				if(((System.currentTimeMillis()-friendly.jumpTime) > friendly.getJumpDelay()) && (!friendly.jumping) || (friendly.jumpTime == 0)){
+					friendly.jumping=true;
+					friendly.jumpTime=System.currentTimeMillis();
+				}
+				break;
+			case KeyEvent.VK_LEFT:
+				friendly.x-=friendly.width/10;
+				if(friendly.direction){
+					friendly.side=!friendly.side;
+					friendly.direction=!friendly.direction;
+				}
+				break;
+			case KeyEvent.VK_RIGHT:
+				friendly.x+=friendly.width/10;
+				if(!friendly.direction){
+					friendly.side=!friendly.side;
+					friendly.direction=!friendly.direction;
+				}
+				break;
+				//Debug code for moving enemy
+			case KeyEvent.VK_J:
+				enemy.x-=enemy.width/10;
+				if(enemy.direction){
+					enemy.side=!enemy.side;
+					enemy.direction=!enemy.direction;
+				}
+				break;
+			case KeyEvent.VK_L:
+				enemy.x+=enemy.width/10;
+				if(!enemy.direction){
+					enemy.side=!enemy.side;
+					enemy.direction=!enemy.direction;
+				}
+				break;
+				/*
+			case KeyEvent.VK_K:
+				enemy.y+=20;
+				break;
+				 */
+			case KeyEvent.VK_I:
+				//enemy.y-=enemy.height/10;
+				if(((System.currentTimeMillis()-enemy.jumpTime) > enemy.getJumpDelay()) && (!enemy.jumping) || (enemy.jumpTime == 0)){
+					enemy.jumping=true;
+					enemy.jumpTime=System.currentTimeMillis();
+				}
+				break;
+			case KeyEvent.VK_SEMICOLON:
+				if(!enemy.attacking){
+					enemy.attacking=true;
+					enemyProjectile.calibrateTo(enemy.x+enemy.width/2,enemy.y+enemy.height/2);
+					enemyProjectile.launch(enemy.side);
+				}
+				break;
 			}
-			break;
-		case KeyEvent.VK_LEFT:
-			friendly.x-=friendly.width/23;
-			if(friendly.direction){
-				friendly.side=!friendly.side;
-				friendly.direction=!friendly.direction;
-			}
-			break;
-		case KeyEvent.VK_RIGHT:
-			friendly.x+=friendly.width/23;
-			if(!friendly.direction){
-				friendly.side=!friendly.side;
-				friendly.direction=!friendly.direction;
-			}
-			break;
-			//Debug code for moving enemy
-		case KeyEvent.VK_NUMPAD4:
-			enemy.x-=20;
-			if(enemy.direction){
-				enemy.side=!enemy.side;
-				enemy.direction=!enemy.direction;
-			}
-			break;
-		case KeyEvent.VK_NUMPAD6:
-			enemy.x+=20;
-			if(!enemy.direction){
-				enemy.side=!enemy.side;
-				enemy.direction=!enemy.direction;
-			}
-			break;
-		case KeyEvent.VK_NUMPAD8:
-			enemy.y-=20;
-			break;
-		case KeyEvent.VK_NUMPAD5:
-			enemy.y+=20;
-			break;
-		case KeyEvent.VK_Q:
-			System.exit(0);
-			break;
-		case KeyEvent.VK_NUMPAD2:/*
-			if(!enemy.attacking)
-				enemy.attacking=true;
-				enemyProjectile.calibrateTo(friendly.x+friendly.width/2,friendly.y+friendly.height/2);
-				enemyProjectile.launch(enemy.side);*/
-			break;
 		}
+		if(keyEvent.getKeyCode() == KeyEvent.VK_C)
+			continueOn=true;
+		if(keyEvent.getKeyCode() == KeyEvent.VK_Q)
+			System.exit(0);
 	}
 	@Override
 	public void keyTyped(KeyEvent keyEvent){

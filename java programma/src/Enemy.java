@@ -4,15 +4,19 @@ public class Enemy {
 	int y;
 	int width=250;
 	int height=300;
+	boolean  attacking=false;
 	boolean side=false;
 	boolean direction=false;
 	boolean accessible=true;;
+	boolean jumping;
+	long jumpTime = 0;
 	private int screenWidth;
 	private int screenHeight;
+	private int jumpDelay=2500;
 	int barrierLeft;
     int barrierRight;
     int health=5;
-	private int variant=0;
+	int variant=-1;
 	private String texture="enemy";
 	public Enemy(int width, int height){
 		screenWidth=width;
@@ -44,5 +48,11 @@ public class Enemy {
 	}
 	public void setVariant(int variant){
 		this.variant = variant;
+	}
+	public boolean isAttacking(){
+		return attacking;
+	}
+	public int getJumpDelay(){
+		return jumpDelay;
 	}
 }
