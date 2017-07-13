@@ -2,9 +2,10 @@
 public class Enemy extends Character {
 	public Enemy(int width, int height){
 		side=false;
+		animation=0;
 		direction=false;
 		variant=-1;
-		variants=5;
+		variants=6;
 		health=5;
 		maxHealth=health;
 		defaultFullHealth=maxHealth;

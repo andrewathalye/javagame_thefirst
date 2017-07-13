@@ -8,23 +8,14 @@ public class AudioSource {
 	AudioInputStream music2;
 	Clip clip;
 	public AudioSource(){
-		music0 = load("resources/music0.wav");
-		music1 = load("resources/music1.wav");
-		music2 = load("resources/music2.wav");
+		music0 = load("music0");
+		music1 = load("music1");
+		music2 = load("music2");
 		create();
 	}
-	private AudioInputStream load(String filename){
+	public AudioInputStream load(String name){
 		try{
-			return AudioSystem.getAudioInputStream(this.getClass().getClassLoader().getResource(filename));
-		} catch(Exception e){
-			System.err.println(filename);
-			e.printStackTrace();
-			return null;
-		}
-	}
-	public AudioInputStream reload(AudioInputStream in, String name){
-		try{
-			return AudioSystem.getAudioInputStream(this.getClass().getClassLoader().getResource("resources/"+name+".wav"));
+			return AudioSystem.getAudioInputStream(this.getClass().getResource(Main.resourceDir+name+".wav"));
 		} catch(Exception e){
 			System.err.println(name);
 			e.printStackTrace();

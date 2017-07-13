@@ -2,6 +2,7 @@
 public abstract class Character {
 	int x;
 	int y;
+	int animation;
 	boolean side;
 	boolean direction;
 	boolean attacking = false;

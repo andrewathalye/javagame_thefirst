@@ -35,6 +35,7 @@ public class Main extends JFrame implements KeyListener{
 	public int fps;
 	private boolean showfps = false;
 	private boolean parity=false;
+	private boolean parity2=false;
 	public int fpserrors=0;
 	public long lastFrameError=0;
 
@@ -69,13 +70,16 @@ public class Main extends JFrame implements KeyListener{
 	private TextureSource textures = new TextureSource();
 	private AudioSource audio = new AudioSource();
 
+	//Resource directory
+	public static String resourceDir="/resources/";
+
 	private enum Gamestate {
 		INTRODUCTION,PLAYING,PAUSED,DEFEAT,VICTORY,COMPLETE
 	}
 	private Gamestate currentGameState = Gamestate.INTRODUCTION;
 
 	public Main(int width, int height, int fps){
-		super("shoot'em v10 release candidate");
+		super("shoot'em v10 release");
 		this.MAX_FPS = fps;
 		this.WIDTH = width;
 		this.HEIGHT = height;
@@ -133,7 +137,11 @@ public class Main extends JFrame implements KeyListener{
 		}
 		if((enemy.y < (HEIGHT - enemy.height - 1)) && !enemy.jumping)
 			enemy.y+=enemy.height/62;
-		if(friendly.x > friendly.barrierRight){
+		if(!enemyDefeated && isFighting())
+			friendly.barrierRight=WIDTH-friendly.width-30;
+		else
+			friendly.barrierRight=WIDTH;
+		if(friendly.x > friendly.barrierRight && ( enemyDefeated || !(isFighting()))){
 			friendly.x=30;
 			stageNumber++;
 			enteringStage=true;
@@ -245,7 +253,6 @@ public class Main extends JFrame implements KeyListener{
 		while(xcollide && ycollide){
 			xcollide=false;
 			ycollide=false;
-			//if(friendly.x+friendly.width > enemy.x && friendly.x < enemy.x)
 			if(enemy.x+enemy.width > friendly.x && enemy.x < friendly.x)
 				xcollide=true;
 			if(enemy.y+enemy.height > friendly.y && enemy.y < friendly.y)
@@ -296,7 +303,29 @@ public class Main extends JFrame implements KeyListener{
 				enemy.makeAccessible();
 				enemy.setHealth(enemy.maxHealth+1);
 			}
-			g.drawImage(textures.enemy[enemy.variant][intFromBool(enemy.side)],null,enemy.x,enemy.y);
+			if(enemy.variant != 6){
+				if(enteringStage){
+					enemy.update(250, 300);
+				}
+				g.drawImage(textures.enemy[enemy.variant][intFromBool(enemy.side)],null,enemy.x,enemy.y);
+			}
+			else{
+				if(enteringStage){
+					enemy.update(250, 150);
+					textures.populateEnemyAnimated(enemy.variant);
+				}
+				g.drawImage(textures.enemyAnimated[enemy.variant][intFromBool(enemy.side)][enemy.animation], null, enemy.x, enemy.y);
+				if(enemy.animation<7){
+					if(parity && parity2){
+						enemy.animation++;
+						parity2=false;
+					}
+					if(parity && !parity2)
+						parity2=true;
+				}
+				else
+					enemy.animation=0;
+			}
 		} else{
 			enemy.makeInaccessible();
 		}
@@ -364,7 +393,7 @@ public class Main extends JFrame implements KeyListener{
 	}
 	private void drawPauseMenu(){
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
-		g.drawImage(textures.pausemenu, null, 0, 0);
+		g.drawImage(textures.pauseMenu, null, 0, 0);
 		g.setFont(textures.bigFont);
 		g.drawString("Stage: "+stageNumber, 200, 300);
 		g.drawString("Controls:", 200, 400);
@@ -459,7 +488,7 @@ public class Main extends JFrame implements KeyListener{
 	}
 	private void drawFramesError(){
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
-		g.drawImage(textures.frameserror, null, 0, 0);
+		g.drawImage(textures.framesError, null, 0, 0);
 		g.dispose();
 		strategy.show();
 		sleep(20000);
@@ -574,13 +603,13 @@ public class Main extends JFrame implements KeyListener{
 					audio.close();
 					audio.create();
 					if(isFighting() && enemy.variant < 4){
-						audio.music1=audio.reload(audio.music1, "music1");
+						audio.music1=audio.load("music1");
 						audio.play(audio.music1);
 					} else if(isFighting() && enemy.variant > 3){
-						audio.music2=audio.reload(audio.music2, "music2");
+						audio.music2=audio.load("music2");
 						audio.play(audio.music2);
 					} else{
-						audio.music0=audio.reload(audio.music0, "music0");
+						audio.music0=audio.load("music0");
 						audio.play(audio.music0);
 					}
 				}
