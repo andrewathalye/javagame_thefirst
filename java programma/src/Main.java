@@ -67,6 +67,7 @@ public class Main extends JFrame implements KeyListener{
 	private Projectile friendlyProjectile = new Projectile();
 	private Projectile enemyProjectile = new Projectile();
 	private TextureSource textures = new TextureSource();
+	private AudioSource audio = new AudioSource();
 
 	private enum Gamestate {
 		INTRODUCTION,PLAYING,PAUSED,DEFEAT,VICTORY,COMPLETE
@@ -74,19 +75,19 @@ public class Main extends JFrame implements KeyListener{
 	private Gamestate currentGameState = Gamestate.INTRODUCTION;
 
 	public Main(int width, int height, int fps){
-		super("shoot'em v10");
+		super("shoot'em v10 release candidate");
 		this.MAX_FPS = fps;
 		this.WIDTH = width;
 		this.HEIGHT = height;
 		enemy=new Enemy(WIDTH,HEIGHT);
 		friendly=new Friendly(WIDTH,HEIGHT);
 		castley=HEIGHT-7*HEIGHT/10;
-		//Debug for mario battle
-		/*
-		stageNumber=7;
-		enemy.setVariant(2);
-		currentGameState=Gamestate.PLAYING;
-		*/
+		//setInvincible();
+	}
+	public void setInvincible(){
+		friendly.health=Integer.MAX_VALUE;
+		friendly.maxHealth=Integer.MAX_VALUE;
+		friendly.defaultFullHealth=Integer.MAX_VALUE;
 	}
 
 	private void init(){
@@ -213,6 +214,9 @@ public class Main extends JFrame implements KeyListener{
 			if(xcollide && ycollide){
 				enemy.y-=enemy.height;
 				enemy.health-=2;
+				friendly.attacking=false;
+				friendlyProjectile.launched=false;
+				friendlyProjectile.calibrateTo(0, 0);
 			}
 		}
 		xcollide=true;
@@ -229,6 +233,9 @@ public class Main extends JFrame implements KeyListener{
 			if(xcollide && ycollide){
 				friendly.y-=2*friendly.height;
 				friendly.health-=2;
+				enemy.attacking=false;
+				enemyProjectile.launched=false;
+				enemyProjectile.calibrateTo(0, 0);
 			}
 		}
 	}
@@ -243,8 +250,6 @@ public class Main extends JFrame implements KeyListener{
 				xcollide=true;
 			if(enemy.y+enemy.height > friendly.y && enemy.y < friendly.y)
 				ycollide=true;
-			//System.out.println(Math.abs(friendly.y - enemy.y));
-			//System.out.println(Math.abs(friendly.x - enemy.x));
 			if(xcollide && ycollide){
 				//friendly.x-=enemy.width;
 				friendly.y-=2*enemy.height;
@@ -287,12 +292,9 @@ public class Main extends JFrame implements KeyListener{
 
 		//draw enemy
 		if(isFighting()){
-			/*if(!enemy.accessible){
-				enemy.makeAccessible();
-			}*/
 			if(enteringStage){
 				enemy.makeAccessible();
-				enemy.setHealth(enemy.fullHealth+1);
+				enemy.setHealth(enemy.maxHealth+1);
 			}
 			g.drawImage(textures.enemy[enemy.variant][intFromBool(enemy.side)],null,enemy.x,enemy.y);
 		} else{
@@ -388,7 +390,6 @@ public class Main extends JFrame implements KeyListener{
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 		if(currentGameState == Gamestate.DEFEAT){
 			g.drawImage(textures.defeat,null,0,0);
-			//isRunning=false;
 			sleep(100);
 		}
 		if(currentGameState == Gamestate.VICTORY){
@@ -445,7 +446,7 @@ public class Main extends JFrame implements KeyListener{
 			enemy.setVariant(-1);
 			enemy.health=enemy.defaultFullHealth;
 			enemyDefeated=false;
-			enemy.fullHealth=enemy.defaultFullHealth;
+			enemy.maxHealth=enemy.defaultFullHealth;
 			enemyProjectile.calibrateTo(0, 0);
 			enemyProjectile.launched=false;
 			enemy.attacking=false;
@@ -475,11 +476,8 @@ public class Main extends JFrame implements KeyListener{
 		return (bool) ? 1 : 0;
 	}
 	private void handleSmoothKeys(){
-		//System.out.println(keys.size());
-		//System.out.println("Ran handler");
 		if(keys.size()>0){
 			for(int i=0;i<keys.size();i++){
-				//System.out.println("Found key!");
 				if(currentGameState == Gamestate.PLAYING){
 					switch(keys.get(i)){
 					case KeyEvent.VK_S:
@@ -557,6 +555,7 @@ public class Main extends JFrame implements KeyListener{
 		drawLoading();
 		if(currentGameState == Gamestate.INTRODUCTION)
 			drawIntro();
+		audio.play(audio.music0);
 		while(isRunning){
 			if(currentGameState == Gamestate.PAUSED)
 				drawPauseMenu();
@@ -570,8 +569,21 @@ public class Main extends JFrame implements KeyListener{
 			handleSmoothKeys();
 			//call update and draw methods
 			if(currentGameState == Gamestate.PLAYING){
-				//attackRandom = new Random(System.currentTimeMillis());
 				update();
+				if(enteringStage){
+					audio.close();
+					audio.create();
+					if(isFighting() && enemy.variant < 4){
+						audio.music1=audio.reload(audio.music1, "music1");
+						audio.play(audio.music1);
+					} else if(isFighting() && enemy.variant > 3){
+						audio.music2=audio.reload(audio.music2, "music2");
+						audio.play(audio.music2);
+					} else{
+						audio.music0=audio.reload(audio.music0, "music0");
+						audio.play(audio.music0);
+					}
+				}
 				if(System.currentTimeMillis()-lastFrameError > 3000)
 					fpserrors=0;
 				if(fps<25){
@@ -607,7 +619,6 @@ public class Main extends JFrame implements KeyListener{
 			showfps=!showfps;
 		if(!keys.contains(keyEvent.getKeyCode())){
 			keys.add(keyEvent.getKeyCode());
-			//System.out.println("Added key");
 		}
 	}
 	@Override

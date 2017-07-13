@@ -1,23 +1,17 @@
 
-public class Friendly {
-	int x = 30;
-	int y;
-	boolean side=true;
-	boolean direction=true;
-	boolean  attacking=false;
-	int variant=0;
-	int barrierLeft;
-	int barrierRight;
-	private int screenWidth;
-	private int screenHeight;
-	private int jumpDelay=2500;
-	int width=350;
-	int height=500;
-	int health=10;
-	int maxHealth=10;
-	boolean jumping;
-	long jumpTime = 0;
+public class Friendly extends Character {
 	public Friendly(int width, int height){
+		x=30;
+		side=true;
+		direction=true;
+		variant=0;
+		variants=1;
+		this.width=350;
+		this.height=500;
+		health=10;
+		maxHealth=10;
+		defaultFullHealth=maxHealth;
+		
 		screenWidth=width;
 		screenHeight=height;
 		barrierLeft=30;
@@ -28,14 +22,5 @@ public class Friendly {
 		this.width=width;
 		this.height=height;
 		y= screenHeight - this.height;
-	}
-	public void setVariant(int variant){
-		this.variant = variant;
-	}
-	public boolean isAttacking(){
-		return attacking;
-	}
-	public int getJumpDelay(){
-		return jumpDelay;
 	}
 }
