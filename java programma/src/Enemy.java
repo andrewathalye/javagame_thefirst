@@ -3,6 +3,7 @@ public class Enemy extends Character {
 	public Enemy(int width, int height){
 		side=false;
 		animation=0;
+		animated=false;
 		direction=false;
 		variant=-1;
 		variants=6;

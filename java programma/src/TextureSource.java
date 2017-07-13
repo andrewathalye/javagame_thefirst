@@ -1,6 +1,6 @@
 import java.awt.Font;
 import java.awt.image.BufferedImage;
-import java.io.File;
+//import java.io.File;
 
 import javax.imageio.ImageIO;
 public class TextureSource {
@@ -48,7 +48,7 @@ public class TextureSource {
 	}
 	private BufferedImage makeImage(String path){
 		try{
-			return ImageIO.read(new File(getClass().getResource(path).toURI()));
+			return ImageIO.read(getClass().getResource(path));
 			//return ImageIO.read(this.getClass().getClassLoader().getResourceAsStream(path));
 		} catch(Exception e){
 			System.err.println(path);

@@ -35,7 +35,8 @@ public class Main extends JFrame implements KeyListener{
 	public int fps;
 	private boolean showfps = false;
 	private boolean parity=false;
-	private boolean parity2=false;
+	private int defaultAnimationRunCounter=4;
+	private int animationRunCounter=defaultAnimationRunCounter;
 	public int fpserrors=0;
 	public long lastFrameError=0;
 
@@ -79,7 +80,7 @@ public class Main extends JFrame implements KeyListener{
 	private Gamestate currentGameState = Gamestate.INTRODUCTION;
 
 	public Main(int width, int height, int fps){
-		super("shoot'em v10 release");
+		super("shoot'em v10r2");
 		this.MAX_FPS = fps;
 		this.WIDTH = width;
 		this.HEIGHT = height;
@@ -303,25 +304,30 @@ public class Main extends JFrame implements KeyListener{
 				enemy.makeAccessible();
 				enemy.setHealth(enemy.maxHealth+1);
 			}
-			if(enemy.variant != 6){
+			if(enemy.variant == 6)
+				enemy.animated=true;
+			else
+				enemy.animated=false;
+			if(!enemy.animated){
 				if(enteringStage){
 					enemy.update(250, 300);
 				}
 				g.drawImage(textures.enemy[enemy.variant][intFromBool(enemy.side)],null,enemy.x,enemy.y);
 			}
-			else{
+			if(enemy.animated){
 				if(enteringStage){
-					enemy.update(250, 150);
+					if(enemy.variant == 6)
+						enemy.update(200, 100);
 					textures.populateEnemyAnimated(enemy.variant);
 				}
 				g.drawImage(textures.enemyAnimated[enemy.variant][intFromBool(enemy.side)][enemy.animation], null, enemy.x, enemy.y);
 				if(enemy.animation<7){
-					if(parity && parity2){
+					if(parity && animationRunCounter == 0){
 						enemy.animation++;
-						parity2=false;
+						animationRunCounter=defaultAnimationRunCounter;
 					}
-					if(parity && !parity2)
-						parity2=true;
+					if(parity && animationRunCounter >0)
+						animationRunCounter--;
 				}
 				else
 					enemy.animation=0;
