@@ -4,7 +4,6 @@ public class Projectile {
 	int x;
 	int y;
 	boolean direction;
-	private String texture="projectile";
 	public Projectile(){
 
 	}
@@ -21,8 +20,5 @@ public class Projectile {
 			x+=40;
 		if(!direction)
 			x-=40;
-	}
-	public String getTexture(){
-		return "resources/"+texture+".png_"+direction;
 	}
 }

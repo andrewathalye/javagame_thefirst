@@ -1,0 +1,80 @@
+Gamestate overview:
+INTRODUCTION :: Gamestate when introduction text is being displayed
+PAUSED :: Gamestate whilst game is paused
+PLAYING :: Gamestate whilst user is playing game
+VICTORY :: Gamestate when player has defeated enemy in fighting stage
+DEFEAT :: Gamestate when player lost to enemy in fighting stage
+COMPLETE :: Gamestate when player has defeated all enemies. Will NOT be in final game as gameplay will be infinite.
+Important variables for modders:
+
+Character.x ( f/e x position)
+Character.y ( f/e y position)
+Character.attacking (Whether Char is attacking)
+projectile.launched (Whether projectile has been launched)
+Character.health (Current health of f/e)
+Character.maxHealth (Health for character to restore to after VICTORY (or +1 for enemy))
+Character.defaultMaxHealth (Default health for character to restore to after VICTORY)
+enemy.accessible (Whether enemy should be displayed on screen)
+Character.jumpDelay (Amount of time in milliseconds before f/e can jump again)
+Character.switchDelay (Amount of time in milliseconds before f can switch sides again)
+
+Class overview for modders:
+TextureSource:
+makeImage :: private that returns BufferedImage object
+*populateEnemyAnimated :: loads image files for animated character into 3d array
+boolFromInt :: private that returns boolean based upon the value of an integer
+<init> :: initialises images using makeImage. Animated enemies need to be populated when they are required (externally).
+
+AudioSource:
+<init> :: loads music from wav format
+*load :: loads audio file and returns AudioInputStream
+*play :: opens a clip, sets infinite repeat, and starts playing specified input from beginning. Returns nothing
+*create :: gets a new Clip object. Returns nothing.
+*close :: destroys Clip object. Returns nothing.
+
++Character:
+*isAttacking :: returns boolean whether attacking == true
+*getJumpDelay :: returns integer jumpDelay.
+*setHealth :: void that sets character's health and maxHealth;
+*makeInaccessible :: void that sets enemy position out of range and variable accessible to false
+*makeAccessible :: void that sets enemy position to default and variable accessible to true
+
+Friendly:
+extends Character
+<init> :: sets position, side, direction, variant, variants, width, height, health, maxHealth, and default full health
+*update :: returns nothing and sets width, height, and y position based upon height.
+
+Enemy:
+extends Character
+<init> :: same as Friendly
+*update :: returns nothing and sets width, height, y, and x position based upon height and width.
+
+Main:
+extends JFrame and implements KeyListener
+<init> :: sets window title, fps, width, height, and instantiates enemy, friendly. Initialises castley based upon height.
+*setInvincible :: debug tool enabling an external class to force the friendly character to have almost infinite health.
+init :: Initialises JFrame settings.
+update :: updates character, projectile, and enemy positions. Checks collision and stage completion.
+projectileCollisionDetect :: checks whether a projectile has hit the enemy or friendly.
+collisionDetect :: checks whether the enemy or friendly have collided.
+draw :: draws the on-screen graphics during gameplay
+drawLoading :: draws the in-game loading screen
+drawIntro :: draws the introduction screen, with configurable text and font.
+isFighting :: returns whether the current stage has fighting (boolean) using simple maths
+drawPauseMenu :: draws the in-game pause menu
+drawEndMenu :: draws the menu when the game has been entirely completed, the player has lost a stage, or the player has won a stage.
+drawFramesError :: draws the error screen when the frame rate has dropped below 25 fps
+sleep :: calls Thread.sleep(int time) for the number of milliseconds specified.
+intFromBool :: returns 1 or 0 based upon whether the input boolean was true or false
+handleSmoothKeys :: runs a custom key handler that enables smooth movement
+*run :: runs the main game loop
+cleanup :: removes flicker by maintaining a constant framerate x where 25<x<51
+*keyPressed :: adds the pressed key to an ArrayList to be handled by handleSmoothKeys
+*keyReleased :: removes the pressed key from the ArrayList when it has been released
+*main :: Launches and instantiates the Main game class.
+
+Projectile:
+<init> :: does nothing
+*calibrateTo :: sets the x and y coordinates of the projectile to the specified integers
+*launch :: launches the projectile in the specified (boolean) direction. Sets launched to true.
+*advance :: brings the x coordinate of the projectile forward in the correct direction

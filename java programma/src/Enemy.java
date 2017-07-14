@@ -6,7 +6,7 @@ public class Enemy extends Character {
 		animated=false;
 		direction=false;
 		variant=-1;
-		variants=6;
+		variants=8;
 		health=5;
 		maxHealth=health;
 		defaultFullHealth=maxHealth;

@@ -6,11 +6,13 @@ public class AudioSource {
 	AudioInputStream music0;
 	AudioInputStream music1;
 	AudioInputStream music2;
+	AudioInputStream music3;
 	Clip clip;
 	public AudioSource(){
 		music0 = load("music0");
 		music1 = load("music1");
 		music2 = load("music2");
+		music3 = load("music3");
 		create();
 	}
 	public AudioInputStream load(String name){

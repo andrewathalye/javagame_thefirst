@@ -1,4 +1,3 @@
-
 public abstract class Character {
 	int x;
 	int y;
@@ -15,6 +14,7 @@ public abstract class Character {
 	protected int screenWidth;
 	protected int screenHeight;
 	protected int jumpDelay=2500;
+	protected int switchDelay=1250;
 	int width;
 	int height;
 	int health;
@@ -22,6 +22,7 @@ public abstract class Character {
 	int defaultFullHealth;
 	boolean jumping=false;
 	long jumpTime = 0;
+	long switchTime = 0;
 	public abstract void update(int width,int height);
 	public void setVariant(int variant){
 		this.variant = variant;

@@ -80,7 +80,7 @@ public class Main extends JFrame implements KeyListener{
 	private Gamestate currentGameState = Gamestate.INTRODUCTION;
 
 	public Main(int width, int height, int fps){
-		super("shoot'em v10r2");
+		super("shoot'em v10r3");
 		this.MAX_FPS = fps;
 		this.WIDTH = width;
 		this.HEIGHT = height;
@@ -304,7 +304,7 @@ public class Main extends JFrame implements KeyListener{
 				enemy.makeAccessible();
 				enemy.setHealth(enemy.maxHealth+1);
 			}
-			if(enemy.variant == 6)
+			if(enemy.variant == 6 || enemy.variant == 7 || enemy.variant == 8)
 				enemy.animated=true;
 			else
 				enemy.animated=false;
@@ -318,6 +318,8 @@ public class Main extends JFrame implements KeyListener{
 				if(enteringStage){
 					if(enemy.variant == 6)
 						enemy.update(200, 100);
+					else
+						enemy.update(250,  300);
 					textures.populateEnemyAnimated(enemy.variant);
 				}
 				g.drawImage(textures.enemyAnimated[enemy.variant][intFromBool(enemy.side)][enemy.animation], null, enemy.x, enemy.y);
@@ -411,6 +413,7 @@ public class Main extends JFrame implements KeyListener{
 		g.drawString("LEFT to move left", 200, 700);
 		g.drawString("RIGHT to move right", 200, 750);
 		g.drawString("S to attack", 200, 800);
+		g.drawString("B to switch sides", 200, 850);
 		g.dispose();
 		strategy.show();
 		continueOn=false;
@@ -448,7 +451,7 @@ public class Main extends JFrame implements KeyListener{
 		}
 		if(currentGameState == Gamestate.VICTORY){
 			currentGameState = Gamestate.PLAYING;
-			sleep(5000);
+			sleep(2500);
 			friendlyProjectile.calibrateTo(0, 0);
 			friendlyProjectile.launched=false;
 			enemyProjectile.calibrateTo(0, 0);
@@ -611,9 +614,12 @@ public class Main extends JFrame implements KeyListener{
 					if(isFighting() && enemy.variant < 4){
 						audio.music1=audio.load("music1");
 						audio.play(audio.music1);
-					} else if(isFighting() && enemy.variant > 3){
+					} else if(isFighting() && enemy.variant > 3 && enemy.variant != 6){
 						audio.music2=audio.load("music2");
 						audio.play(audio.music2);
+					} else if(isFighting() && enemy.variant == 6){
+						audio.music3=audio.load("music3");
+						audio.play(audio.music3);
 					} else{
 						audio.music0=audio.load("music0");
 						audio.play(audio.music0);
@@ -652,6 +658,14 @@ public class Main extends JFrame implements KeyListener{
 	public void keyPressed(KeyEvent keyEvent){
 		if(keyEvent.getKeyCode() == KeyEvent.VK_F)
 			showfps=!showfps;
+		if(keyEvent.getKeyCode() == KeyEvent.VK_B){
+			if(((System.currentTimeMillis()-friendly.switchTime) > friendly.switchDelay) || (friendly.switchTime == 0)){
+				friendly.switchTime=System.currentTimeMillis();
+				friendly.x=WIDTH-friendly.x-friendly.width;
+				friendly.side=!friendly.side;
+				friendly.direction=!friendly.direction;
+			}
+		}
 		if(!keys.contains(keyEvent.getKeyCode())){
 			keys.add(keyEvent.getKeyCode());
 		}

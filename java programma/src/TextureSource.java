@@ -5,8 +5,8 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 public class TextureSource {
 	BufferedImage[][] friendly = new BufferedImage[2][2];
-	BufferedImage[][] enemy = new BufferedImage[6][2];
-	BufferedImage[][][] enemyAnimated = new BufferedImage[7][2][8];
+	BufferedImage[][] enemy = new BufferedImage[9][2];
+	BufferedImage[][][] enemyAnimated = new BufferedImage[9][2][8];
 	BufferedImage[] projectile = new BufferedImage[2];
 	BufferedImage defeat;
 	BufferedImage victory;
@@ -57,7 +57,10 @@ public class TextureSource {
 		}
 	}
 	public void populateEnemyAnimated(int enemy){
+		//System.out.println("Loading!");
+		//i represents side
 		for(int i=0;i<2;i++){
+			//i2 represents animation number
 			for(int i2=0;i2<8;i2++){
 				//System.out.println(prefix+"enemyanimated"+enemy+","+i2+".png_"+boolFromInt(i));
 				enemyAnimated[enemy][i][i2]=makeImage(prefix+"enemyanimated"+enemy+"_"+i2+".png_"+boolFromInt(i));
