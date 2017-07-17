@@ -31,7 +31,6 @@ public class Main extends JFrame{
 	public boolean isRunning = true;
 	private long rest = 0;
 	static boolean continueOn=false;
-	private int continueKeySize=16;
 
 
 	//timing variables
@@ -45,6 +44,11 @@ public class Main extends JFrame{
 	private int animationRunCounter=defaultAnimationRunCounter;
 	public int fpserrors=0;
 	public long lastFrameError=0;
+
+	//DRM variables
+	private static int magicNumber=46;
+	private static int versionNumber=11;
+	private static int versionVariant=0;
 
 	//collision vars
 	private boolean xcollide = false;
@@ -86,7 +90,7 @@ public class Main extends JFrame{
 	static Gamestate currentGameState = Gamestate.INTRODUCTION;
 
 	public Main(int width, int height, int fps){
-		super("shoot'em v10r4");
+		super("shoot'em v"+versionNumber+"r"+versionVariant);
 		this.MAX_FPS = fps;
 		this.WIDTH = width;
 		this.HEIGHT = height;
@@ -389,6 +393,7 @@ public class Main extends JFrame{
 		}
 	}
 	private void drawLoading(){
+		System.out.println("Drawing loading screen...");
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 		g.drawImage(textures.loading, null, 0, 10);
 		g.dispose();
@@ -396,6 +401,7 @@ public class Main extends JFrame{
 		sleep(2000);
 	}
 	private void drawIntro(){
+		System.out.println("Drawing introduction screen...");
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 		g.drawImage(textures.introduction, null, 0, 0);
 		g.setColor(Color.black);
@@ -421,29 +427,12 @@ public class Main extends JFrame{
 		return i == 1;
 	}
 	private String makeContinueKey(){
-		int[] keyArray=new int[continueKeySize];
-		keyArray[0]=stageNumber;
-		keyArray[1]=enemy.variant;
-		keyArray[2]=friendly.variant;
-		keyArray[3]=friendly.x;
-		keyArray[4]=friendly.y;
-		keyArray[5]=enemy.x;
-		keyArray[6]=enemy.y;
-		keyArray[7]=friendly.health;
-		keyArray[8]=enemy.health;
-		keyArray[9]=enemy.maxHealth;
-		keyArray[10]=friendly.width;
-		keyArray[11]=friendly.height;
-		keyArray[12]=enemy.width;
-		keyArray[13]=enemy.height;
-		keyArray[14]=intFromBool(enemy.animated);
-		keyArray[15]=intFromBool(enemy.accessible);
-		for(int i=0;i<continueKeySize;i++)
+		int[] keyArray = {stageNumber,enemy.variant,friendly.variant,friendly.x,friendly.y,enemy.x,enemy.y,friendly.health,enemy.health,enemy.maxHealth,friendly.width,friendly.height,enemy.width,enemy.height,intFromBool(enemy.animated),intFromBool(enemy.accessible)};
+		for(int i=0;i<keyArray.length;i++)
 			keyArray[i]=keyArray[i]+3;
-		return new String(Base64.getEncoder().encode((keyArray[0]+","+keyArray[1]+","+keyArray[2]+","+keyArray[3]+","+keyArray[4]+","+keyArray[5]+","+keyArray[6]+","+keyArray[7]+","+keyArray[8]+","+keyArray[9]+","+keyArray[10]+","+keyArray[11]+","+keyArray[12]+","+keyArray[13]+","+keyArray[14]+","+keyArray[15]).getBytes()));
+		return new String(Base64.getEncoder().encode((keyArray[0]+","+keyArray[1]+","+keyArray[2]+","+keyArray[3]+","+keyArray[4]+","+keyArray[5]+","+keyArray[6]+","+keyArray[7]+","+keyArray[8]+","+keyArray[9]+","+keyArray[10]+","+keyArray[11]+","+keyArray[12]+","+keyArray[13]+","+keyArray[14]+","+keyArray[15]+","+(magicNumber+3)+","+(versionNumber+3)).getBytes()));
 	}
 	void loadContinueKey(){
-		//TODO: Implement keyLoading
 		String key;
 		try {
 			key=(String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
@@ -452,47 +441,68 @@ public class Main extends JFrame{
 			e.printStackTrace();
 		}
 		key=new String(Base64.getDecoder().decode(key.getBytes()));
-		String[] keyArray=new String[continueKeySize];
-		try{
-			keyArray=key.split(",");
-		} catch(Exception e){
-			keyArray=null;
-			e.printStackTrace();
+		String[] keyArray=key.split(",");
+		if(keyArray.length != 18){
+			System.err.println("Invalid continue key size...");
+			System.err.println("Hacking detected! Exiting for safety...");
+			System.exit(1);
 		}
-		int[] keyIntArray=new int[continueKeySize];
-		for(int i=0;i<continueKeySize;i++)
-			keyIntArray[i]=Integer.parseInt(keyArray[i])-3;
-		stageNumber=keyIntArray[0];
-		if(enteringStage)
-			keyIntArray[1]--;
-		enemy.variant=keyIntArray[1];
-		friendly.variant=keyIntArray[2];
-		friendly.x=keyIntArray[3];
-		friendly.y=keyIntArray[4];
-		enemy.x=keyIntArray[5];
-		enemy.y=keyIntArray[6];
-		friendly.health=keyIntArray[7];
-		enemy.health=keyIntArray[8];
-		enemy.maxHealth=keyIntArray[9];
-		friendly.width=keyIntArray[10];
-		friendly.height=keyIntArray[11];
-		enemy.width=keyIntArray[12];
-		enemy.height=keyIntArray[13];
-		enemy.animated=boolFromInt(keyIntArray[14]);
-		enemy.accessible=boolFromInt(keyIntArray[15]);
-		friendly.attacking=false;
-		enemy.attacking=false;
-		enemy.animation=0;
-		friendly.side=true;
-		enemy.side=false;
-		//enemy.animated=
-		friendlyProjectile.launched=false;
-		enemyProjectile.launched=false;
-		friendlyProjectile.calibrateTo(0, 0);
-		enemyProjectile.calibrateTo(0, 0);
-		System.out.println("Loaded continue key...");
+		else{
+			int[] keyIntArray=new int[keyArray.length];
+			for(int i=0;i<keyArray.length;i++)
+				keyIntArray[i]=Integer.parseInt(keyArray[i])-3;
+			if(keyIntArray[0]<0){
+				System.err.println("Invalid stage number...Hacking detected!");
+				System.err.println("Exiting for safety!");
+				System.exit(1);
+			} else
+				stageNumber=keyIntArray[0];
+			if(enteringStage && isFighting() && keyIntArray[1]>-1)
+				keyIntArray[1]--;
+			if(!enteringStage && keyIntArray[1]<0)
+				keyIntArray[1]++;
+			enemy.variant=keyIntArray[1];
+			if(friendly.variant<friendly.variants+1)
+				friendly.variant=keyIntArray[2];
+			else{
+				System.err.println("Invalid friendly variant! Exiting for safety...");
+				System.exit(1);
+			}
+			friendly.x=keyIntArray[3];
+			friendly.y=keyIntArray[4];
+			enemy.x=keyIntArray[5];
+			enemy.y=keyIntArray[6];
+			friendly.health=keyIntArray[7];
+			enemy.health=keyIntArray[8];
+			enemy.maxHealth=keyIntArray[9];
+			friendly.width=keyIntArray[10];
+			friendly.height=keyIntArray[11];
+			enemy.width=keyIntArray[12];
+			enemy.height=keyIntArray[13];
+			enemy.animated=boolFromInt(keyIntArray[14]);
+			enemy.accessible=boolFromInt(keyIntArray[15]);
+			if(keyIntArray[16] != magicNumber){
+				System.err.println("Invalid magic number! Exiting for safety...");
+				System.exit(1);
+			}
+			if(keyIntArray[17] != versionNumber){
+				System.err.println("This continue key was made by a different version of ShootEm (Version "+keyIntArray[17]+")! Exiting for safety...");
+				System.exit(1);
+			}
+			friendly.attacking=false;
+			enemy.attacking=false;
+			enemy.animation=0;
+			friendly.side=true;
+			enemy.side=false;
+			friendlyProjectile.launched=false;
+			enemyProjectile.launched=false;
+			friendlyProjectile.calibrateTo(0, 0);
+			enemyProjectile.calibrateTo(0, 0);
+			System.out.println("Loaded continue key...");
+		}
 	}
 	private void drawPauseMenu(){
+		System.out.println("Drawing pause menu...");
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 		g.drawImage(textures.pauseMenu, null, 0, 0);
 		g.setFont(textures.bigFont);
@@ -533,6 +543,7 @@ public class Main extends JFrame{
 		return 100000*(stageNumber-1)/50;
 	}
 	private void drawEndMenu(){
+		System.out.println("Drawing end menu with type "+currentGameState.toString()+"...");
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 		if(currentGameState == Gamestate.DEFEAT){
 			g.drawImage(textures.defeat,null,0,0);
@@ -542,6 +553,7 @@ public class Main extends JFrame{
 			g.drawString("Press Q to quit.", WIDTH/2-WIDTH/4, HEIGHT/2+HEIGHT/10);
 			g.setColor(Color.red);
 			g.drawString("Score: "+getScore(),WIDTH/2-WIDTH/4, HEIGHT/2+HEIGHT/5);
+			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""),null);
 			sleep(100);
 		}
 		if(currentGameState == Gamestate.VICTORY){
@@ -578,6 +590,7 @@ public class Main extends JFrame{
 			friendly.y=HEIGHT-friendly.height;
 			enemyDefeated=true;
 			enemy.attacking=false;
+			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(makeContinueKey()),null);
 		}
 		if(currentGameState == Gamestate.DEFEAT){
 			continueOn=false;
@@ -613,6 +626,7 @@ public class Main extends JFrame{
 		}
 	}
 	private void drawFramesError(){
+		System.out.println("Drawing low framerate error...");
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 		g.drawImage(textures.framesError, null, 0, 0);
 		g.dispose();
@@ -678,7 +692,7 @@ public class Main extends JFrame{
 				}
 				if(fps>60){
 					System.err.println("Exiting due to framerate hacking...");
-					System.exit(0);
+					System.exit(1);
 				}
 				if(enemy.variant > enemy.variants){
 					currentGameState = Gamestate.COMPLETE;
