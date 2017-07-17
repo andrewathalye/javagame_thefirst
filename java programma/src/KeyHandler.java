@@ -23,10 +23,80 @@ public class KeyHandler extends Thread implements KeyListener{
 				//friendly.direction=!friendly.direction;
 			}
 		}
+		if(e.getKeyCode() == KeyEvent.VK_Z && Main.currentGameState == Main.Gamestate.PAUSED)
+			Main.loadingKey=true;
 		//System.out.println("p "+e.getKeyCode());
 		if(!keys.contains(e.getKeyCode()))
 			keys.add(e.getKeyCode());
-		Main.continueOn=true;
+	}
+	void handleSmoothKeys(){
+		if(keys.size()>0){
+			for(int i=0;i<keys.size();i++){
+				if(Main.currentGameState == Main.Gamestate.PLAYING){
+					switch(keys.get(i)){
+					case KeyEvent.VK_S:
+						if(!Main.friendly.attacking){
+							Main.friendly.attacking=true;
+							Main.friendlyProjectile.calibrateTo(Main.friendly.x+Main.friendly.width/2,Main.friendly.y+Main.friendly.height/2);
+							Main.friendlyProjectile.launch(Main.friendly.side);
+						}
+						break;
+					case KeyEvent.VK_ESCAPE:
+						Main.currentGameState = Main.Gamestate.PAUSED;
+						break;
+					case KeyEvent.VK_SPACE:
+						if(((System.currentTimeMillis()-Main.friendly.jumpTime) > Main.friendly.getJumpDelay()) && (!Main.friendly.jumping) || (Main.friendly.jumpTime == 0)){
+							Main.friendly.jumping=true;
+							Main.friendly.jumpTime=System.currentTimeMillis();
+						}
+						break;
+					case KeyEvent.VK_A:
+						Main.friendly.x-=Main.friendly.width/20;
+						Main.friendly.side=false;
+						break;
+					case KeyEvent.VK_D:
+						Main.friendly.x+=Main.friendly.width/20;
+						Main.friendly.side=true;
+						break;
+						//Debug code for moving enemy
+						/*
+					case KeyEvent.VK_J:
+						enemy.x-=enemy.width/20;
+						if(enemy.direction){
+							enemy.side=!enemy.side;
+							enemy.direction=!enemy.direction;
+						}
+						break;
+					case KeyEvent.VK_L:
+						enemy.x+=enemy.width/20;
+						if(!enemy.direction){
+							enemy.side=!enemy.side;
+							enemy.direction=!enemy.direction;
+						}
+						break;
+					case KeyEvent.VK_I:
+						//enemy.y-=enemy.height/10;
+						if(((System.currentTimeMillis()-enemy.jumpTime) > enemy.getJumpDelay()) && (!enemy.jumping) || (enemy.jumpTime == 0)){
+							enemy.jumping=true;
+							enemy.jumpTime=System.currentTimeMillis();
+						}
+						break;
+					case KeyEvent.VK_SEMICOLON:
+						if(!enemy.attacking){
+							enemy.attacking=true;
+							enemyProjectile.calibrateTo(enemy.x+enemy.width/2,enemy.y+enemy.height/2+50);
+							enemyProjectile.launch(enemy.side);
+						}
+						break;
+						 */
+					}
+				}
+				if(keys.get(i) == KeyEvent.VK_ENTER)
+					Main.continueOn=true;
+				if(keys.get(i) == KeyEvent.VK_Q)
+					System.exit(0);
+			}
+		}
 	}
 	@Override
 	public void keyTyped(KeyEvent e){

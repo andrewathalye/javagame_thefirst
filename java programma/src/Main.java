@@ -1,9 +1,13 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+//import java.awt.datatransfer.UnsupportedFlavorException;
+//import java.awt.event.KeyEvent;
+//import java.awt.event.KeyListener;
 import java.awt.image.BufferStrategy;
-import java.util.ArrayList;
+//import java.io.IOException;
+//import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Random;
 
@@ -27,6 +31,7 @@ public class Main extends JFrame{
 	public boolean isRunning = true;
 	private long rest = 0;
 	static boolean continueOn=false;
+	private int continueKeySize=16;
 
 
 	//timing variables
@@ -48,7 +53,6 @@ public class Main extends JFrame{
 	//enemy vars
 	private boolean enemyDefeated = false;
 	private Random attackRandom = new Random();
-	String continueKey;
 
 
 	//cloud variables
@@ -66,7 +70,8 @@ public class Main extends JFrame{
 	//Initialise objects
 	static Friendly friendly;
 	static Enemy enemy;
-	private Projectile friendlyProjectile = new Projectile();
+	static Projectile friendlyProjectile = new Projectile();
+	static boolean loadingKey=false;
 	private Projectile enemyProjectile = new Projectile();
 	private TextureSource textures = new TextureSource();
 	private AudioSource audio = new AudioSource();
@@ -75,10 +80,10 @@ public class Main extends JFrame{
 	//Resource directory
 	public static String resourceDir="/resources/";
 
-	private enum Gamestate {
+	static enum Gamestate {
 		INTRODUCTION,PLAYING,PAUSED,DEFEAT,VICTORY,COMPLETE
 	}
-	private Gamestate currentGameState = Gamestate.INTRODUCTION;
+	static Gamestate currentGameState = Gamestate.INTRODUCTION;
 
 	public Main(int width, int height, int fps){
 		super("shoot'em v10r4");
@@ -244,10 +249,10 @@ public class Main extends JFrame{
 			xcollide=false;
 			ycollide=false;
 			//if(Math.abs(enemyProjectile.x - friendly.x) < friendly.width+1 && enemyProjectile.x > friendly.x)
-			/*if(friendly.x+friendly.width > enemyProjectile.x && friendly.x < enemyProjectile.x)
-				xcollide=true;*/
-			if(((friendly.x>enemy.x) && (friendly.x<enemy.x+enemy.width)) || ((friendly.x+friendly.width<enemy.x+enemy.width) && (friendly.x+friendly.width>enemy.x)))
+			if(friendly.x+friendly.width > enemyProjectile.x && friendly.x < enemyProjectile.x)
 				xcollide=true;
+			/*if(((friendly.x>enemy.x) && (friendly.x<enemy.x+enemy.width)) || ((friendly.x+friendly.width<enemy.x+enemy.width) && (friendly.x+friendly.width>enemy.x)))
+				xcollide=true;*/
 			//if(Math.abs(enemyProjectile.y - friendly.y) < friendly.height+1 && enemyProjectile.y < friendly.y)
 			if(friendly.y+friendly.height > enemyProjectile.y && friendly.y < enemyProjectile.y)
 				ycollide=true;
@@ -412,21 +417,90 @@ public class Main extends JFrame{
 	private boolean isFighting(){
 		return !((stageNumber/2)*2 == stageNumber);
 	}
+	private boolean boolFromInt(int i){
+		return i == 1;
+	}
 	private String makeContinueKey(){
-		return new String(Base64.getEncoder().encode((stageNumber+","+enemy.variant+","+friendly.variant+","+friendly.x+","+friendly.y+","+enemy.x+","+enemy.y).getBytes()));
+		int[] keyArray=new int[continueKeySize];
+		keyArray[0]=stageNumber;
+		keyArray[1]=enemy.variant;
+		keyArray[2]=friendly.variant;
+		keyArray[3]=friendly.x;
+		keyArray[4]=friendly.y;
+		keyArray[5]=enemy.x;
+		keyArray[6]=enemy.y;
+		keyArray[7]=friendly.health;
+		keyArray[8]=enemy.health;
+		keyArray[9]=enemy.maxHealth;
+		keyArray[10]=friendly.width;
+		keyArray[11]=friendly.height;
+		keyArray[12]=enemy.width;
+		keyArray[13]=enemy.height;
+		keyArray[14]=intFromBool(enemy.animated);
+		keyArray[15]=intFromBool(enemy.accessible);
+		for(int i=0;i<continueKeySize;i++)
+			keyArray[i]=keyArray[i]+3;
+		return new String(Base64.getEncoder().encode((keyArray[0]+","+keyArray[1]+","+keyArray[2]+","+keyArray[3]+","+keyArray[4]+","+keyArray[5]+","+keyArray[6]+","+keyArray[7]+","+keyArray[8]+","+keyArray[9]+","+keyArray[10]+","+keyArray[11]+","+keyArray[12]+","+keyArray[13]+","+keyArray[14]+","+keyArray[15]).getBytes()));
 	}
 	void loadContinueKey(){
 		//TODO: Implement keyLoading
-		//String key=new String(Base64.getDecoder().decode(continueKey.getBytes()));
+		String key;
+		try {
+			key=(String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+		} catch(Exception e){
+			key="";
+			e.printStackTrace();
+		}
+		key=new String(Base64.getDecoder().decode(key.getBytes()));
+		String[] keyArray=new String[continueKeySize];
+		try{
+			keyArray=key.split(",");
+		} catch(Exception e){
+			keyArray=null;
+			e.printStackTrace();
+		}
+		int[] keyIntArray=new int[continueKeySize];
+		for(int i=0;i<continueKeySize;i++)
+			keyIntArray[i]=Integer.parseInt(keyArray[i])-3;
+		stageNumber=keyIntArray[0];
+		if(enteringStage)
+			keyIntArray[1]--;
+		enemy.variant=keyIntArray[1];
+		friendly.variant=keyIntArray[2];
+		friendly.x=keyIntArray[3];
+		friendly.y=keyIntArray[4];
+		enemy.x=keyIntArray[5];
+		enemy.y=keyIntArray[6];
+		friendly.health=keyIntArray[7];
+		enemy.health=keyIntArray[8];
+		enemy.maxHealth=keyIntArray[9];
+		friendly.width=keyIntArray[10];
+		friendly.height=keyIntArray[11];
+		enemy.width=keyIntArray[12];
+		enemy.height=keyIntArray[13];
+		enemy.animated=boolFromInt(keyIntArray[14]);
+		enemy.accessible=boolFromInt(keyIntArray[15]);
+		friendly.attacking=false;
+		enemy.attacking=false;
+		enemy.animation=0;
+		friendly.side=true;
+		enemy.side=false;
+		//enemy.animated=
+		friendlyProjectile.launched=false;
+		enemyProjectile.launched=false;
+		friendlyProjectile.calibrateTo(0, 0);
+		enemyProjectile.calibrateTo(0, 0);
+		System.out.println("Loaded continue key...");
 	}
 	private void drawPauseMenu(){
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 		g.drawImage(textures.pauseMenu, null, 0, 0);
 		g.setFont(textures.bigFont);
-		g.drawString("Stage: "+stageNumber, 200, 300);
-		g.drawString("Continue Code: ", 200, 350);
-		g.setFont(textures.medFont);
-		g.drawString(makeContinueKey(), 700, 350);
+		g.drawString("Continue key is on Clipboard. ", 200, 300);
+		g.drawString("Stage: "+stageNumber, 200, 350);
+		//g.setFont(textures.medFont);
+		//g.drawString(makeContinueKey(), 700, 350);
+		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(makeContinueKey()),null);
 		g.setFont(textures.bigFont);
 		g.drawString("Controls:", 200, 400);
 		g.drawString("ENTER to resume/continue", 200, 450);
@@ -438,14 +512,20 @@ public class Main extends JFrame{
 		g.drawString("D to move right", 200, 750);
 		g.drawString("S to attack", 200, 800);
 		g.drawString("W to switch sides", 200, 850);
-		g.drawString("Z to load continue code", 200, 900);
+		g.drawString("Z to load continue key from Clipboard", 200, 900);
 		g.dispose();
 		strategy.show();
 		continueOn=false;
 		sleep(200);
+		loadingKey=false;
 		while(!continueOn){
 			sleep(10);
 			handleSmoothKeys();
+			if(loadingKey){
+				loadContinueKey();
+				loadingKey=false;
+				continueOn=true;
+			}
 		}
 		currentGameState=Gamestate.PLAYING;
 	}
@@ -550,75 +630,7 @@ public class Main extends JFrame{
 	private int intFromBool(boolean bool){
 		return (bool) ? 1 : 0;
 	}
-	private void handleSmoothKeys(){
-		if(keyHandler.keys.size()>0){
-			for(int i=0;i<keyHandler.keys.size();i++){
-				if(currentGameState == Gamestate.PLAYING){
-					switch(keyHandler.keys.get(i)){
-					case KeyEvent.VK_S:
-						if(!friendly.attacking){
-							friendly.attacking=true;
-							friendlyProjectile.calibrateTo(friendly.x+friendly.width/2,friendly.y+friendly.height/2);
-							friendlyProjectile.launch(friendly.side);
-						}
-						break;
-					case KeyEvent.VK_ESCAPE:
-						currentGameState = Gamestate.PAUSED;
-						break;
-					case KeyEvent.VK_SPACE:
-						if(((System.currentTimeMillis()-friendly.jumpTime) > friendly.getJumpDelay()) && (!friendly.jumping) || (friendly.jumpTime == 0)){
-							friendly.jumping=true;
-							friendly.jumpTime=System.currentTimeMillis();
-						}
-						break;
-					case KeyEvent.VK_A:
-						friendly.x-=friendly.width/20;
-						friendly.side=false;
-						break;
-					case KeyEvent.VK_D:
-						friendly.x+=friendly.width/20;
-						friendly.side=true;
-						break;
-						//Debug code for moving enemy
-						/*
-					case KeyEvent.VK_J:
-						enemy.x-=enemy.width/20;
-						if(enemy.direction){
-							enemy.side=!enemy.side;
-							enemy.direction=!enemy.direction;
-						}
-						break;
-					case KeyEvent.VK_L:
-						enemy.x+=enemy.width/20;
-						if(!enemy.direction){
-							enemy.side=!enemy.side;
-							enemy.direction=!enemy.direction;
-						}
-						break;
-					case KeyEvent.VK_I:
-						//enemy.y-=enemy.height/10;
-						if(((System.currentTimeMillis()-enemy.jumpTime) > enemy.getJumpDelay()) && (!enemy.jumping) || (enemy.jumpTime == 0)){
-							enemy.jumping=true;
-							enemy.jumpTime=System.currentTimeMillis();
-						}
-						break;
-					case KeyEvent.VK_SEMICOLON:
-						if(!enemy.attacking){
-							enemy.attacking=true;
-							enemyProjectile.calibrateTo(enemy.x+enemy.width/2,enemy.y+enemy.height/2+50);
-							enemyProjectile.launch(enemy.side);
-						}
-						break;
-						 */
-					}
-				}
-				if(keyHandler.keys.get(i) == KeyEvent.VK_ENTER)
-					continueOn=true;
-				if(keyHandler.keys.get(i) == KeyEvent.VK_Q)
-					System.exit(0);
-			}
-		}
-	}
+
 	public void run(){
 		init();
 		drawLoading();
@@ -664,6 +676,10 @@ public class Main extends JFrame{
 					if(fpserrors>20)
 						drawFramesError();
 				}
+				if(fps>60){
+					System.err.println("Exiting due to framerate hacking...");
+					System.exit(0);
+				}
 				if(enemy.variant > enemy.variants){
 					currentGameState = Gamestate.COMPLETE;
 					drawEndMenu();
@@ -677,6 +693,9 @@ public class Main extends JFrame{
 		}
 
 	}
+	private void handleSmoothKeys(){
+		keyHandler.handleSmoothKeys();
+	}
 	private void cleanup(){
 		//dynamic thread sleep, only sleep the time we need to cap the framerate
 		rest = (1000/MAX_FPS) - (System.currentTimeMillis() - startFrame);
@@ -685,17 +704,6 @@ public class Main extends JFrame{
 			catch (InterruptedException e){ e.printStackTrace(); }
 		}
 	}
-	/*@Override
-	public void keyPressed(KeyEvent keyEvent){
-	}
-	@Override
-	public void keyTyped(KeyEvent keyEvent){
-		//System.out.println(keyEvent.getKeyChar());
-	}
-	@Override
-	public void keyReleased(KeyEvent keyEvent)
-	{
-	}*/
 
 	public static void main(String[] args){
 		Main game = new Main(1920, 1000, 50);
