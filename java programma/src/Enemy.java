@@ -4,7 +4,7 @@ public class Enemy extends Character {
 		side=false;
 		animation=0;
 		animated=false;
-		direction=false;
+		//direction=false;
 		variant=-1;
 		variants=8;
 		health=5;

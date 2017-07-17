@@ -4,7 +4,7 @@ public abstract class Character {
 	int animation;
 	boolean animated;
 	boolean side;
-	boolean direction;
+	//boolean direction;
 	boolean attacking = false;
 	boolean accessible=true;
 	int variant;

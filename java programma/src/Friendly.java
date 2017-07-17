@@ -3,7 +3,7 @@ public class Friendly extends Character {
 	public Friendly(int width, int height){
 		x=30;
 		side=true;
-		direction=true;
+		//direction=true;
 		variant=0;
 		variants=1;
 		this.width=350;

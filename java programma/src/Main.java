@@ -4,9 +4,10 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferStrategy;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Random;
 
-public class Main extends JFrame implements KeyListener{
+public class Main extends JFrame{
 
 	/**
 	 * (C) 2017 Andrew Athalye. Read attached README.md for specific details.
@@ -25,7 +26,7 @@ public class Main extends JFrame implements KeyListener{
 	//loop variables
 	public boolean isRunning = true;
 	private long rest = 0;
-	private boolean continueOn=false;
+	static boolean continueOn=false;
 
 
 	//timing variables
@@ -33,7 +34,7 @@ public class Main extends JFrame implements KeyListener{
 	public long lastFrame;
 	public long startFrame;
 	public int fps;
-	private boolean showfps = false;
+	static boolean showfps = false;
 	private boolean parity=false;
 	private int defaultAnimationRunCounter=4;
 	private int animationRunCounter=defaultAnimationRunCounter;
@@ -47,9 +48,8 @@ public class Main extends JFrame implements KeyListener{
 	//enemy vars
 	private boolean enemyDefeated = false;
 	private Random attackRandom = new Random();
+	String continueKey;
 
-	//smooth key input
-	private ArrayList<Integer> keys = new ArrayList<Integer>();
 
 	//cloud variables
 	private int cloudx = 0;
@@ -64,12 +64,13 @@ public class Main extends JFrame implements KeyListener{
 	//textures and fonts are now at TextureSource
 
 	//Initialise objects
-	private Friendly friendly;
-	private Enemy enemy;
+	static Friendly friendly;
+	static Enemy enemy;
 	private Projectile friendlyProjectile = new Projectile();
 	private Projectile enemyProjectile = new Projectile();
 	private TextureSource textures = new TextureSource();
 	private AudioSource audio = new AudioSource();
+	private KeyHandler keyHandler;
 
 	//Resource directory
 	public static String resourceDir="/resources/";
@@ -80,14 +81,22 @@ public class Main extends JFrame implements KeyListener{
 	private Gamestate currentGameState = Gamestate.INTRODUCTION;
 
 	public Main(int width, int height, int fps){
-		super("shoot'em v10r3");
+		super("shoot'em v10r4");
 		this.MAX_FPS = fps;
 		this.WIDTH = width;
 		this.HEIGHT = height;
+		System.out.println("Created projectiles...");
+		System.out.println("Created texture and music maps...");
+		System.out.println("Creating enemy...");
 		enemy=new Enemy(WIDTH,HEIGHT);
+		System.out.println("Creating friendly...");
 		friendly=new Friendly(WIDTH,HEIGHT);
+		System.out.println("Creating key handler...");
+		keyHandler=new KeyHandler(WIDTH,HEIGHT);
 		castley=HEIGHT-7*HEIGHT/10;
 		//setInvincible();
+		//currentGameState=Gamestate.PLAYING;
+		//enemy.variant=enemy.variants;
 	}
 	public void setInvincible(){
 		friendly.health=Integer.MAX_VALUE;
@@ -113,8 +122,9 @@ public class Main extends JFrame implements KeyListener{
 		strategy = getBufferStrategy();
 
 		lastFrame = System.currentTimeMillis();
-		addKeyListener(this);
+		addKeyListener(keyHandler);
 		setFocusable(true);
+		requestFocusInWindow();
 	}
 
 	private void update(){
@@ -234,7 +244,9 @@ public class Main extends JFrame implements KeyListener{
 			xcollide=false;
 			ycollide=false;
 			//if(Math.abs(enemyProjectile.x - friendly.x) < friendly.width+1 && enemyProjectile.x > friendly.x)
-			if(friendly.x+friendly.width > enemyProjectile.x && friendly.x < enemyProjectile.x)
+			/*if(friendly.x+friendly.width > enemyProjectile.x && friendly.x < enemyProjectile.x)
+				xcollide=true;*/
+			if(((friendly.x>enemy.x) && (friendly.x<enemy.x+enemy.width)) || ((friendly.x+friendly.width<enemy.x+enemy.width) && (friendly.x+friendly.width>enemy.x)))
 				xcollide=true;
 			//if(Math.abs(enemyProjectile.y - friendly.y) < friendly.height+1 && enemyProjectile.y < friendly.y)
 			if(friendly.y+friendly.height > enemyProjectile.y && friendly.y < enemyProjectile.y)
@@ -387,11 +399,12 @@ public class Main extends JFrame implements KeyListener{
 		g.drawString("You play as Antonov, a magician. The ",500,450);
 		g.drawString("goal of the game is simple: defeat the",500,600);
 		g.drawString("enemies, advance stages, and survive.",500,750);
-		g.drawString("Press C to continue on, or Q to abort.",500,900);
+		g.drawString("Press ENTER to continue, or Q to abort.",500,900);
 		g.dispose();
 		strategy.show();
 		continueOn=false;
 		while(!continueOn){
+			sleep(10);
 			handleSmoothKeys();
 			currentGameState=Gamestate.PAUSED;
 		}
@@ -399,21 +412,33 @@ public class Main extends JFrame implements KeyListener{
 	private boolean isFighting(){
 		return !((stageNumber/2)*2 == stageNumber);
 	}
+	private String makeContinueKey(){
+		return new String(Base64.getEncoder().encode((stageNumber+","+enemy.variant+","+friendly.variant+","+friendly.x+","+friendly.y+","+enemy.x+","+enemy.y).getBytes()));
+	}
+	void loadContinueKey(){
+		//TODO: Implement keyLoading
+		//String key=new String(Base64.getDecoder().decode(continueKey.getBytes()));
+	}
 	private void drawPauseMenu(){
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 		g.drawImage(textures.pauseMenu, null, 0, 0);
 		g.setFont(textures.bigFont);
 		g.drawString("Stage: "+stageNumber, 200, 300);
+		g.drawString("Continue Code: ", 200, 350);
+		g.setFont(textures.medFont);
+		g.drawString(makeContinueKey(), 700, 350);
+		g.setFont(textures.bigFont);
 		g.drawString("Controls:", 200, 400);
-		g.drawString("C to resume/continue", 200, 450);
+		g.drawString("ENTER to resume/continue", 200, 450);
 		g.drawString("F to show fps/errors", 200, 500);
 		g.drawString("Q to quit", 200, 550);
 		g.drawString("ESC to pause", 200, 600);
 		g.drawString("SPACE to jump", 200, 650);
-		g.drawString("LEFT to move left", 200, 700);
-		g.drawString("RIGHT to move right", 200, 750);
+		g.drawString("A to move left", 200, 700);
+		g.drawString("D to move right", 200, 750);
 		g.drawString("S to attack", 200, 800);
-		g.drawString("B to switch sides", 200, 850);
+		g.drawString("W to switch sides", 200, 850);
+		g.drawString("Z to load continue code", 200, 900);
 		g.dispose();
 		strategy.show();
 		continueOn=false;
@@ -424,21 +449,33 @@ public class Main extends JFrame implements KeyListener{
 		}
 		currentGameState=Gamestate.PLAYING;
 	}
+	public int getScore(){
+		return 100000*(stageNumber-1)/50;
+	}
 	private void drawEndMenu(){
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 		if(currentGameState == Gamestate.DEFEAT){
 			g.drawImage(textures.defeat,null,0,0);
+			g.setColor(Color.black);
+			g.setFont(textures.hugeFont);
+			g.drawString("Press ENTER to continue.", WIDTH/2-WIDTH/4, HEIGHT/2);
+			g.drawString("Press Q to quit.", WIDTH/2-WIDTH/4, HEIGHT/2+HEIGHT/10);
+			g.setColor(Color.red);
+			g.drawString("Score: "+getScore(),WIDTH/2-WIDTH/4, HEIGHT/2+HEIGHT/5);
 			sleep(100);
 		}
 		if(currentGameState == Gamestate.VICTORY){
 			g.drawImage(textures.victory,null,0,0);
 			enemy.makeInaccessible();
 			enemy.health=1;
-			enemy.direction=false;
+			enemy.side=false;
 			enemy.side=false;
 		}
 		if(currentGameState == Gamestate.COMPLETE){
 			g.drawImage(textures.complete, null, 0, 0);
+			g.setColor(Color.red);
+			g.setFont(textures.hugeFont);
+			g.drawString("Score: "+getScore(), WIDTH-WIDTH/2, HEIGHT-HEIGHT/10);
 			isRunning=false;
 		}
 		g.dispose();
@@ -476,11 +513,11 @@ public class Main extends JFrame implements KeyListener{
 			friendlyProjectile.calibrateTo(0, 0);
 			friendlyProjectile.launched=false;
 			friendly.side=true;
-			friendly.direction=true;
+			//friendly.direction=true;
 			friendly.attacking=false;
 
 			enemy.side=false;
-			enemy.direction=false;
+			//enemy.direction=false;
 			enemy.setVariant(-1);
 			enemy.health=enemy.defaultFullHealth;
 			enemyDefeated=false;
@@ -514,10 +551,10 @@ public class Main extends JFrame implements KeyListener{
 		return (bool) ? 1 : 0;
 	}
 	private void handleSmoothKeys(){
-		if(keys.size()>0){
-			for(int i=0;i<keys.size();i++){
+		if(keyHandler.keys.size()>0){
+			for(int i=0;i<keyHandler.keys.size();i++){
 				if(currentGameState == Gamestate.PLAYING){
-					switch(keys.get(i)){
+					switch(keyHandler.keys.get(i)){
 					case KeyEvent.VK_S:
 						if(!friendly.attacking){
 							friendly.attacking=true;
@@ -534,19 +571,13 @@ public class Main extends JFrame implements KeyListener{
 							friendly.jumpTime=System.currentTimeMillis();
 						}
 						break;
-					case KeyEvent.VK_LEFT:
+					case KeyEvent.VK_A:
 						friendly.x-=friendly.width/20;
-						if(friendly.direction){
-							friendly.side=!friendly.side;
-							friendly.direction=!friendly.direction;
-						}
+						friendly.side=false;
 						break;
-					case KeyEvent.VK_RIGHT:
+					case KeyEvent.VK_D:
 						friendly.x+=friendly.width/20;
-						if(!friendly.direction){
-							friendly.side=!friendly.side;
-							friendly.direction=!friendly.direction;
-						}
+						friendly.side=true;
 						break;
 						//Debug code for moving enemy
 						/*
@@ -581,9 +612,9 @@ public class Main extends JFrame implements KeyListener{
 						 */
 					}
 				}
-				if(keys.get(i) == KeyEvent.VK_C)
+				if(keyHandler.keys.get(i) == KeyEvent.VK_ENTER)
 					continueOn=true;
-				if(keys.get(i) == KeyEvent.VK_Q)
+				if(keyHandler.keys.get(i) == KeyEvent.VK_Q)
 					System.exit(0);
 			}
 		}
@@ -654,38 +685,27 @@ public class Main extends JFrame implements KeyListener{
 			catch (InterruptedException e){ e.printStackTrace(); }
 		}
 	}
-	@Override
+	/*@Override
 	public void keyPressed(KeyEvent keyEvent){
-		if(keyEvent.getKeyCode() == KeyEvent.VK_F)
-			showfps=!showfps;
-		if(keyEvent.getKeyCode() == KeyEvent.VK_B){
-			if(((System.currentTimeMillis()-friendly.switchTime) > friendly.switchDelay) || (friendly.switchTime == 0)){
-				friendly.switchTime=System.currentTimeMillis();
-				friendly.x=WIDTH-friendly.x-friendly.width;
-				friendly.side=!friendly.side;
-				friendly.direction=!friendly.direction;
-			}
-		}
-		if(!keys.contains(keyEvent.getKeyCode())){
-			keys.add(keyEvent.getKeyCode());
-		}
 	}
 	@Override
 	public void keyTyped(KeyEvent keyEvent){
-
+		//System.out.println(keyEvent.getKeyChar());
 	}
 	@Override
 	public void keyReleased(KeyEvent keyEvent)
 	{
-		for(int i=keys.size()-1; i>-1; i--){
-			if(keys.get(i) == keyEvent.getKeyCode())
-				keys.remove(i);
-		}
-	}
+	}*/
 
 	public static void main(String[] args){
 		Main game = new Main(1920, 1000, 50);
 		game.run();
+	}
+	public int getHeight(){
+		return HEIGHT;
+	}
+	public int getWidth(){
+		return WIDTH;
 	}
 
 }
