@@ -41,7 +41,7 @@ public class Main extends JFrame{
 
 	//DRM variables
 	private static int versionNumber=11;
-	private static int versionVariant=2;
+	private static int versionVariant=3;
 
 	//collision vars
 	private boolean xcollide = false;
@@ -437,7 +437,14 @@ public class Main extends JFrame{
 			e.printStackTrace();
 		}
 		//System.out.println("Decrypted value: "+DigitalRightsManagement.decryptAES(key));
-		key=DigitalRightsManagement.base64decode(DigitalRightsManagement.decryptAES(key));
+		try{
+			key=DigitalRightsManagement.base64decode(DigitalRightsManagement.decryptAES(key));
+		}
+			catch(Exception e){
+			System.err.println("An attempt was made to load an invalid continue key...");
+			System.err.println("Hacking detected! Exiting for safety...");
+			System.exit(1);
+		}
 		String[] keyArray=key.split(",");
 		if(keyArray.length != DigitalRightsManagement.continueKeySize){
 			System.err.println("Invalid continue key size...");
