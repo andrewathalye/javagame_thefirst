@@ -41,7 +41,7 @@ public class Main extends JFrame{
 
 	//DRM variables
 	private static int versionNumber=11;
-	private static int versionVariant=3;
+	private static int versionVariant=4;
 
 	//collision vars
 	private boolean xcollide = false;
