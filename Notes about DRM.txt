@@ -1,0 +1,16 @@
+Notice about DigitalRightsManagement (the class file):
+
+	Provided with this source release is an...incomplete...version of DigitalRightsManagement.
+It will allow the source code to be built, run, and properly tested, however it will not provide any DRM functionality.
+In the final release, this version shall be swapped with a functional version of DigitalRightsManagement, which will
+provide DRM functionalities such as encryption. Therefore, continue keys from source versions of Shoot'Em will NOT be
+compatible with binary release versions. If you so desire, you may decompile the binary release versions in order to
+see the functional version of DigitalRightsManagement, however you should be aware that all versions containing functional
+DRM will also be obfuscated. Therefore, as a nod to developers, two binary releases of Shoot'Em will be made. One that is
+unobfuscated, and does not contain DRM, and another, that is obfuscated, but that will produce continue keys compatible with
+the final game and all other DRM-enabled versions. If the code of DigitalRightsManagement is leaked in unobfuscated form,
+and the key and IV information made available via hacking, both of these will be immediately changed, and the released with
+compromised security will be removed from my Github. Feel free to fork my project, if you really want to play around with a
+cracked DRM version, however I will always (at least for a very long time) release a version without DRM as well.
+Apologies for this,
+Andrew Athalye

@@ -2,13 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
-//import java.awt.datatransfer.UnsupportedFlavorException;
-//import java.awt.event.KeyEvent;
-//import java.awt.event.KeyListener;
 import java.awt.image.BufferStrategy;
-//import java.io.IOException;
-//import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Random;
 
 public class Main extends JFrame{
@@ -46,9 +40,8 @@ public class Main extends JFrame{
 	public long lastFrameError=0;
 
 	//DRM variables
-	private static int magicNumber=46;
 	private static int versionNumber=11;
-	private static int versionVariant=0;
+	private static int versionVariant=2;
 
 	//collision vars
 	private boolean xcollide = false;
@@ -427,10 +420,13 @@ public class Main extends JFrame{
 		return i == 1;
 	}
 	private String makeContinueKey(){
-		int[] keyArray = {stageNumber,enemy.variant,friendly.variant,friendly.x,friendly.y,enemy.x,enemy.y,friendly.health,enemy.health,enemy.maxHealth,friendly.width,friendly.height,enemy.width,enemy.height,intFromBool(enemy.animated),intFromBool(enemy.accessible)};
+		int[] keyArray = {stageNumber,enemy.variant,friendly.variant,friendly.x,friendly.y,enemy.x,enemy.y,friendly.health,enemy.health,enemy.maxHealth,friendly.width,friendly.height,enemy.width,enemy.height,intFromBool(enemy.animated),intFromBool(enemy.accessible),DigitalRightsManagement.magicNumber,versionNumber};
+		String[] stringArray = new String[keyArray.length];
 		for(int i=0;i<keyArray.length;i++)
-			keyArray[i]=keyArray[i]+3;
-		return new String(Base64.getEncoder().encode((keyArray[0]+","+keyArray[1]+","+keyArray[2]+","+keyArray[3]+","+keyArray[4]+","+keyArray[5]+","+keyArray[6]+","+keyArray[7]+","+keyArray[8]+","+keyArray[9]+","+keyArray[10]+","+keyArray[11]+","+keyArray[12]+","+keyArray[13]+","+keyArray[14]+","+keyArray[15]+","+(magicNumber+3)+","+(versionNumber+3)).getBytes()));
+			stringArray[i]=Integer.toString(keyArray[i]+DigitalRightsManagement.additionNumber);
+		String keyDelim = String.join(",", stringArray);
+		//System.out.println(DigitalRightsManagement.base64encode(keyDelim));
+		return DigitalRightsManagement.encryptAES(DigitalRightsManagement.base64encode(keyDelim));
 	}
 	void loadContinueKey(){
 		String key;
@@ -440,9 +436,10 @@ public class Main extends JFrame{
 			key="";
 			e.printStackTrace();
 		}
-		key=new String(Base64.getDecoder().decode(key.getBytes()));
+		//System.out.println("Decrypted value: "+DigitalRightsManagement.decryptAES(key));
+		key=DigitalRightsManagement.base64decode(DigitalRightsManagement.decryptAES(key));
 		String[] keyArray=key.split(",");
-		if(keyArray.length != 18){
+		if(keyArray.length != DigitalRightsManagement.continueKeySize){
 			System.err.println("Invalid continue key size...");
 			System.err.println("Hacking detected! Exiting for safety...");
 			System.exit(1);
@@ -450,7 +447,7 @@ public class Main extends JFrame{
 		else{
 			int[] keyIntArray=new int[keyArray.length];
 			for(int i=0;i<keyArray.length;i++)
-				keyIntArray[i]=Integer.parseInt(keyArray[i])-3;
+				keyIntArray[i]=Integer.parseInt(keyArray[i])-DigitalRightsManagement.additionNumber;
 			if(keyIntArray[0]<0){
 				System.err.println("Invalid stage number...Hacking detected!");
 				System.err.println("Exiting for safety!");
@@ -481,7 +478,7 @@ public class Main extends JFrame{
 			enemy.height=keyIntArray[13];
 			enemy.animated=boolFromInt(keyIntArray[14]);
 			enemy.accessible=boolFromInt(keyIntArray[15]);
-			if(keyIntArray[16] != magicNumber){
+			if(keyIntArray[16] != DigitalRightsManagement.magicNumber){
 				System.err.println("Invalid magic number! Exiting for safety...");
 				System.exit(1);
 			}

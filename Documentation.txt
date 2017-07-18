@@ -61,20 +61,43 @@ draw :: draws the on-screen graphics during gameplay
 drawLoading :: draws the in-game loading screen
 drawIntro :: draws the introduction screen, with configurable text and font.
 isFighting :: returns whether the current stage has fighting (boolean) using simple maths
+boolFromInt :: returns a boolean based upon the value of the input integer
+makeContinueKey :: Using the power of DigitalRightsManagement, returns a fresh continue key
+loadContinueKey :: Using the power of DigitalRightsManagement, loads a continue key from clipboard
 drawPauseMenu :: draws the in-game pause menu
+getScore :: Returns the players score
 drawEndMenu :: draws the menu when the game has been entirely completed, the player has lost a stage, or the player has won a stage.
 drawFramesError :: draws the error screen when the frame rate has dropped below 25 fps
 sleep :: calls Thread.sleep(int time) for the number of milliseconds specified.
 intFromBool :: returns 1 or 0 based upon whether the input boolean was true or false
-handleSmoothKeys :: runs a custom key handler that enables smooth movement
 *run :: runs the main game loop
+handleSmoothKeys :: runs a custom key handler that enables smooth movement. Located in KeyHandler
 cleanup :: removes flicker by maintaining a constant framerate x where 25<x<51
-*keyPressed :: adds the pressed key to an ArrayList to be handled by handleSmoothKeys
-*keyReleased :: removes the pressed key from the ArrayList when it has been released
 *main :: Launches and instantiates the Main game class.
+*getHeight :: Returns the height of the window
+*getWidth :: Returns the width of the window
 
 Projectile:
 <init> :: does nothing
 *calibrateTo :: sets the x and y coordinates of the projectile to the specified integers
 *launch :: launches the projectile in the specified (boolean) direction. Sets launched to true.
 *advance :: brings the x coordinate of the projectile forward in the correct direction
+
+KeyHandler:
+*keys :: Stores a list of pressed keys
+WIDTH :: Width of main window
+HEIGHT :: Height of main window
+<init> :: Initialises height and width variables
+*keyPressed :: Runs when a key is pressed.
+*handleSmoothKeys :: Runs a smooth key handler
+*keyTyped :: Not used
+*keyReleased :: Runs when a key is released
+
+DigitalRightsManagement:
+<ONLY A BASIC OVERVIEW IS AVAILABLE>
+encryptAES :: Encrypts input String and returns an encrypted String.
+*PRIVATE METHOD*
+*PRIVATE METHOD*
+decryptAES :: Decrypts input String and returns a decrypted String.
+base64encode :: Encodes input String and returns encoded String.
+base64decode :: Receives encoded String and returns decoded String.
