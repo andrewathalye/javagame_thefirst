@@ -25,7 +25,12 @@ public class KeyHandler extends Thread implements KeyListener{
 		}
 		if(e.getKeyCode() == KeyEvent.VK_Z && Main.currentGameState == Main.Gamestate.PAUSED)
 			Main.loadingKey=true;
-		//System.out.println("p "+e.getKeyCode());
+		if(e.getKeyCode() == KeyEvent.VK_X && Main.currentGameState == Main.Gamestate.PAUSED)
+			Main.savingKey=true;
+		if(e.getKeyCode() == KeyEvent.VK_Q){
+			System.out.println("Exiting...");
+			System.exit(0);
+		}
 		if(!keys.contains(e.getKeyCode()))
 			keys.add(e.getKeyCode());
 	}
@@ -93,8 +98,6 @@ public class KeyHandler extends Thread implements KeyListener{
 				}
 				if(keys.get(i) == KeyEvent.VK_ENTER)
 					Main.continueOn=true;
-				if(keys.get(i) == KeyEvent.VK_Q)
-					System.exit(0);
 			}
 		}
 	}

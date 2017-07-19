@@ -41,7 +41,7 @@ public class Main extends JFrame{
 
 	//DRM variables
 	private static int versionNumber=11;
-	private static int versionVariant=4;
+	private static int versionVariant=5;
 
 	//collision vars
 	private boolean xcollide = false;
@@ -69,6 +69,7 @@ public class Main extends JFrame{
 	static Enemy enemy;
 	static Projectile friendlyProjectile = new Projectile();
 	static boolean loadingKey=false;
+	static boolean savingKey=false;
 	private Projectile enemyProjectile = new Projectile();
 	private TextureSource textures = new TextureSource();
 	private AudioSource audio = new AudioSource();
@@ -97,15 +98,14 @@ public class Main extends JFrame{
 		keyHandler=new KeyHandler(WIDTH,HEIGHT);
 		castley=HEIGHT-7*HEIGHT/10;
 		//setInvincible();
-		//currentGameState=Gamestate.PLAYING;
-		//enemy.variant=enemy.variants;
 	}
-	public void setInvincible(){
+	
+	/*static void setInvincible(){
 		friendly.health=Integer.MAX_VALUE;
 		friendly.maxHealth=Integer.MAX_VALUE;
 		friendly.defaultFullHealth=Integer.MAX_VALUE;
-	}
-
+	}*/
+	
 	private void init(){
 		//initialize JFrame
 		setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -420,15 +420,16 @@ public class Main extends JFrame{
 		return i == 1;
 	}
 	private String makeContinueKey(){
-		int[] keyArray = {stageNumber,enemy.variant,friendly.variant,friendly.x,friendly.y,enemy.x,enemy.y,friendly.health,enemy.health,enemy.maxHealth,friendly.width,friendly.height,enemy.width,enemy.height,intFromBool(enemy.animated),intFromBool(enemy.accessible),DigitalRightsManagement.magicNumber,versionNumber};
+		int[] keyArray = {stageNumber,enemy.variant,friendly.variant,friendly.x,friendly.y,enemy.x,enemy.y,friendly.health,enemy.health,enemy.maxHealth,friendly.width,friendly.height,enemy.width,enemy.height,intFromBool(enemy.animated),intFromBool(enemy.accessible),intFromBool(enemyDefeated),DigitalRightsManagement.magicNumber,versionNumber};
 		String[] stringArray = new String[keyArray.length];
 		for(int i=0;i<keyArray.length;i++)
 			stringArray[i]=Integer.toString(keyArray[i]+DigitalRightsManagement.additionNumber);
 		String keyDelim = String.join(",", stringArray);
 		//System.out.println(DigitalRightsManagement.base64encode(keyDelim));
+		System.out.println("Making continue key...");
 		return DigitalRightsManagement.encryptAES(DigitalRightsManagement.base64encode(keyDelim));
 	}
-	void loadContinueKey(){
+	private void loadContinueKey(){
 		String key;
 		try {
 			key=(String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
@@ -453,18 +454,21 @@ public class Main extends JFrame{
 		}
 		else{
 			int[] keyIntArray=new int[keyArray.length];
+			//int originalStageNumber=0;
 			for(int i=0;i<keyArray.length;i++)
 				keyIntArray[i]=Integer.parseInt(keyArray[i])-DigitalRightsManagement.additionNumber;
 			if(keyIntArray[0]<0){
 				System.err.println("Invalid stage number...Hacking detected!");
 				System.err.println("Exiting for safety!");
 				System.exit(1);
-			} else
+			} else{
+				//originalStageNumber=stageNumber;
 				stageNumber=keyIntArray[0];
+			}
 			if(enteringStage && isFighting() && keyIntArray[1]>-1)
 				keyIntArray[1]--;
-			if(!enteringStage && keyIntArray[1]<0)
-				keyIntArray[1]++;
+			/*if(!enteringStage && keyIntArray[1]<0 && stageNumber == originalStageNumber)
+				keyIntArray[1]++;*/
 			enemy.variant=keyIntArray[1];
 			if(friendly.variant<friendly.variants+1)
 				friendly.variant=keyIntArray[2];
@@ -485,11 +489,12 @@ public class Main extends JFrame{
 			enemy.height=keyIntArray[13];
 			enemy.animated=boolFromInt(keyIntArray[14]);
 			enemy.accessible=boolFromInt(keyIntArray[15]);
-			if(keyIntArray[16] != DigitalRightsManagement.magicNumber){
+			enemyDefeated=boolFromInt(keyIntArray[16]);
+			if(keyIntArray[17] != DigitalRightsManagement.magicNumber){
 				System.err.println("Invalid magic number! Exiting for safety...");
 				System.exit(1);
 			}
-			if(keyIntArray[17] != versionNumber){
+			if(keyIntArray[18] != versionNumber){
 				System.err.println("This continue key was made by a different version of ShootEm (Version "+keyIntArray[17]+")! Exiting for safety...");
 				System.exit(1);
 			}
@@ -510,13 +515,12 @@ public class Main extends JFrame{
 		Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
 		g.drawImage(textures.pauseMenu, null, 0, 0);
 		g.setFont(textures.bigFont);
-		g.drawString("Continue key is on Clipboard. ", 200, 300);
-		g.drawString("Stage: "+stageNumber, 200, 350);
+		g.drawString("Stage: "+stageNumber, 200, 300);
 		//g.setFont(textures.medFont);
 		//g.drawString(makeContinueKey(), 700, 350);
-		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(makeContinueKey()),null);
 		g.setFont(textures.bigFont);
-		g.drawString("Controls:", 200, 400);
+		g.drawString("Controls:", 200, 350);
+		g.drawString("X to save continue key to Clipboard",200,400);
 		g.drawString("ENTER to resume/continue", 200, 450);
 		g.drawString("F to show fps/errors", 200, 500);
 		g.drawString("Q to quit", 200, 550);
@@ -539,6 +543,10 @@ public class Main extends JFrame{
 				loadContinueKey();
 				loadingKey=false;
 				continueOn=true;
+			}
+			if(savingKey){
+				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(makeContinueKey()),null);
+				savingKey=false;
 			}
 		}
 		currentGameState=Gamestate.PLAYING;
@@ -654,6 +662,7 @@ public class Main extends JFrame{
 		drawLoading();
 		if(currentGameState == Gamestate.INTRODUCTION)
 			drawIntro();
+		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(makeContinueKey()),null);
 		audio.play(audio.music0);
 		while(isRunning){
 			if(currentGameState == Gamestate.PAUSED)

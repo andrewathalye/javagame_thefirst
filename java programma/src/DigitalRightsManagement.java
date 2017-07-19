@@ -2,7 +2,7 @@ import java.util.Base64;
 
 
 class DigitalRightsManagement {
-	final static int continueKeySize=18;
+	final static int continueKeySize=19;
 	final static int additionNumber=0;
 	final static int magicNumber=0;
 	static String encryptAES(String value) {
