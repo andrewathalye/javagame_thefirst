@@ -40,8 +40,8 @@ public class Main extends JFrame{
 	public long lastFrameError=0;
 
 	//DRM variables
-	private static int versionNumber=11;
-	private static int versionVariant=6;
+	private static int versionNumber=12;
+	private static int versionVariant=1;
 
 	//collision vars
 	private boolean xcollide = false;
@@ -99,13 +99,13 @@ public class Main extends JFrame{
 		castley=HEIGHT-7*HEIGHT/10;
 		//setInvincible();
 	}
-	
+
 	/*static void setInvincible(){
 		friendly.health=Integer.MAX_VALUE;
 		friendly.maxHealth=Integer.MAX_VALUE;
 		friendly.defaultFullHealth=Integer.MAX_VALUE;
 	}*/
-	
+
 	private void init(){
 		//initialize JFrame
 		setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -437,11 +437,13 @@ public class Main extends JFrame{
 			key="";
 			e.printStackTrace();
 		}
+		if(key.equals(""))
+			key=makeContinueKey();
 		//System.out.println("Decrypted value: "+DigitalRightsManagement.decryptAES(key));
 		try{
 			key=DigitalRightsManagement.base64decode(DigitalRightsManagement.decryptAES(key));
 		}
-			catch(Exception e){
+		catch(Exception e){
 			System.err.println("An attempt was made to load an invalid continue key...");
 			System.err.println("Hacking detected! Exiting for safety...");
 			System.exit(1);
@@ -488,14 +490,16 @@ public class Main extends JFrame{
 			enemy.width=keyIntArray[12];
 			enemy.height=keyIntArray[13];
 			enemy.animated=boolFromInt(keyIntArray[14]);
+			if(enemy.animated)
+				textures.populateEnemyAnimated(enemy.variant);
 			enemy.accessible=boolFromInt(keyIntArray[15]);
 			enemyDefeated=boolFromInt(keyIntArray[16]);
-			if(keyIntArray[17] != DigitalRightsManagement.magicNumber){
-				System.err.println("Invalid magic number! Exiting for safety...");
+			if(keyIntArray[18] != versionNumber){
+				System.err.println("This continue key was made by a different version of ShootEm (Version "+keyIntArray[18]+")! Exiting for safety...");
 				System.exit(1);
 			}
-			if(keyIntArray[18] != versionNumber){
-				System.err.println("This continue key was made by a different version of ShootEm (Version "+keyIntArray[17]+")! Exiting for safety...");
+			if(keyIntArray[17] != DigitalRightsManagement.magicNumber){
+				System.err.println("Invalid magic number! Exiting for safety...");
 				System.exit(1);
 			}
 			friendly.attacking=false;
@@ -552,7 +556,7 @@ public class Main extends JFrame{
 		currentGameState=Gamestate.PLAYING;
 	}
 	public int getScore(){
-		return 100000*(stageNumber-1)/50;
+		return 100000*(stageNumber-1)/50+6400*friendly.health;
 	}
 	private void drawEndMenu(){
 		System.out.println("Drawing end menu with type "+currentGameState.toString()+"...");
@@ -663,6 +667,19 @@ public class Main extends JFrame{
 		if(currentGameState == Gamestate.INTRODUCTION)
 			drawIntro();
 		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(makeContinueKey()),null);
+		/*stageNumber=0;
+		while(stageNumber<19){
+			System.err.println(makeContinueKey());
+			stageNumber++;
+			if(isFighting()){
+				enemy.makeAccessible();
+				enemy.variant++;
+				friendly.variant=1;
+			} else
+				enemy.makeInaccessible();
+				friendly.variant=0;
+		}
+		System.exit(0);*/
 		audio.play(audio.music0);
 		while(isRunning){
 			if(currentGameState == Gamestate.PAUSED)
