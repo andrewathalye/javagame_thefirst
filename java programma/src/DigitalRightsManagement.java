@@ -16,6 +16,6 @@ class DigitalRightsManagement {
 		return new String(Base64.getEncoder().encode(in.getBytes()));
 	}
 	static String base64decode(String in){
-		return new String(Base64.getDecoder().decode(in.getBytes()));
+		return new String(Base64.getMimeDecoder().decode(in.getBytes()));
 	}
 }
