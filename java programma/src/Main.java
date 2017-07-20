@@ -41,7 +41,7 @@ public class Main extends JFrame{
 
 	//DRM variables
 	private static int versionNumber=12;
-	private static int versionVariant=1;
+	private static int versionVariant=2;
 
 	//collision vars
 	private boolean xcollide = false;
@@ -375,7 +375,7 @@ public class Main extends JFrame{
 		if(showfps){
 			g.setColor(Color.red);
 			g.setFont(textures.smallFont);
-			g.drawString(Long.toString(fps)+" fps "+fpserrors+" errors.", 10, 40);
+			g.drawString("v"+versionNumber+"r"+versionVariant+" "+Long.toString(fps)+" fps "+fpserrors+" errors.", 10, 40);
 		}
 		//release resources, show the buffer
 		g.dispose();
@@ -425,9 +425,9 @@ public class Main extends JFrame{
 		for(int i=0;i<keyArray.length;i++)
 			stringArray[i]=Integer.toString(keyArray[i]+DigitalRightsManagement.additionNumber);
 		String keyDelim = String.join(",", stringArray);
-		//System.out.println(DigitalRightsManagement.base64encode(keyDelim));
 		System.out.println("Making continue key...");
-		return DigitalRightsManagement.encryptAES(DigitalRightsManagement.base64encode(keyDelim));
+		String initVector=DigitalRightsManagement.getIV();
+		return DigitalRightsManagement.encryptIV(initVector)+","+DigitalRightsManagement.encryptAES(DigitalRightsManagement.base64encode(keyDelim),initVector);
 	}
 	private void loadContinueKey(){
 		String key;
@@ -439,9 +439,11 @@ public class Main extends JFrame{
 		}
 		if(key.equals(""))
 			key=makeContinueKey();
-		//System.out.println("Decrypted value: "+DigitalRightsManagement.decryptAES(key));
+		String[] initKeyArray=key.split(",");
+		key=initKeyArray[1];
+		String initVector=DigitalRightsManagement.decryptIV(initKeyArray[0]);
 		try{
-			key=DigitalRightsManagement.base64decode(DigitalRightsManagement.decryptAES(key));
+			key=DigitalRightsManagement.base64decode(DigitalRightsManagement.decryptAES(key,initVector));
 		}
 		catch(Exception e){
 			System.err.println("An attempt was made to load an invalid continue key...");
@@ -666,20 +668,7 @@ public class Main extends JFrame{
 		drawLoading();
 		if(currentGameState == Gamestate.INTRODUCTION)
 			drawIntro();
-		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(makeContinueKey()),null);
-		/*stageNumber=0;
-		while(stageNumber<19){
-			System.err.println(makeContinueKey());
-			stageNumber++;
-			if(isFighting()){
-				enemy.makeAccessible();
-				enemy.variant++;
-				friendly.variant=1;
-			} else
-				enemy.makeInaccessible();
-				friendly.variant=0;
-		}
-		System.exit(0);*/
+		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""),null);
 		audio.play(audio.music0);
 		while(isRunning){
 			if(currentGameState == Gamestate.PAUSED)
